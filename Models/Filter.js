@@ -13,6 +13,10 @@ const FilterSchema = mongoose.Schema(
           type: String,
           unique: true,
         },
+        image: {
+          type: String,
+          default: null,
+        },
       },
     ],
   },

@@ -130,10 +130,20 @@ export const addFilterType = async (req, res) => {
 export const updateFilterType = async (req, res) => {
   // const newItem = new Filters(req.body);
   const { name, id, _id } = req.body;
+  console.log(
+    req.files.find((file) => file.fieldname === "image").id.toString()
+  );
   try {
     Filters.findOneAndUpdate(
       { _id: id, "subFilter._id": _id },
-      { $set: { "subFilter.$.name": name } }
+      {
+        $set: {
+          "subFilter.$.name": name,
+          "subFilter.$.image": req.files
+            .find((file) => file.fieldname === "image")
+            .id.toString(),
+        },
+      }
     )
       .then((resp) => {
         Filters.find({ _id: id, "subFilter._id": _id })
