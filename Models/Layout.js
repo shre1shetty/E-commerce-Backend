@@ -88,6 +88,11 @@ const LayoutSchema = new mongoose.Schema(
         required: true,
       },
     },
+    isActive: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
   },
   { timestamps: true }
 );
