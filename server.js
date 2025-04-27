@@ -5,7 +5,7 @@ import { InventoryRoute } from "./Routes/inventoryRoutes.js";
 import { FilterRoute } from "./Routes/filterRoutes.js";
 import { VariantRoutes } from "./Routes/variantsRoutes.js";
 import { ProductRoutes } from "./Routes/productRoutes.js";
-import mongodb, { ObjectId } from "mongodb";
+import mongodb from "mongodb";
 import { LoginRoutes } from "./Routes/loginRoutes.js";
 import { LayoutRoutes } from "./Routes/layoutRoutes.js";
 import dotenv from "dotenv";
@@ -53,6 +53,42 @@ app.use("/Products", ProductRoutes);
 app.use("/Layout", LayoutRoutes);
 app.use("/Login", LoginRoutes);
 
+app.get("/file", async (req, res) => {
+  try {
+    // Validate file ID
+    if (!mongoose.Types.ObjectId.isValid(req.query.id)) {
+      return res.status(400).send("Invalid file ID");
+    }
+
+    const fileId = new mongoose.Types.ObjectId(req.query.id);
+    // Find the file in GridFS
+    gfs
+      .find({ _id: fileId })
+      .toArray()
+      .then((files) => {
+        if (!files || files.length === 0) {
+          return res.status(404).send("File not found");
+        }
+
+        // Set the content type and stream the file
+        res.set("Content-Type", files[0].contentType);
+        gfs
+          .openDownloadStream(fileId)
+          .on("error", (err) => {
+            console.error("Stream error:", err);
+            res.status(500).send("Error streaming file");
+          })
+          .pipe(res);
+      })
+      .catch((err) => {
+        console.error("Error finding file:", err);
+        res.status(500).send("Error retrieving file");
+      });
+  } catch (error) {
+    console.error("Error retrieving file:", error);
+    res.status(500).send("Error retrieving file");
+  }
+});
 export const getFileContentById = (ID) => {
   return new Promise((resolve, reject) => {
     try {

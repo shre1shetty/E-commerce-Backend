@@ -154,3 +154,66 @@ export const updateProduct = async (req, res) => {
     });
   }
 };
+
+export const getProductByCategory = async (req, res) => {
+  try {
+    let products = await Products.find({ "category.value": req.query.id })
+      .select("-createdAt -updatedAt -__v -variantValues")
+      .lean();
+    if (products.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        statusMsg: "No Product Found",
+      });
+    }
+    res.json(products);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
+};
+
+export const getSearchProduct = async (req, res) => {
+  try {
+    async function getProductsBySearch(searchTerm) {
+      console.log(searchTerm);
+      if (searchTerm.length === 0) {
+        return []; // prevent infinite recursion
+      }
+      const productList = await Products.find({
+        $or: [
+          { name: { $regex: searchTerm, $options: "i" } },
+          { fabric: { $regex: searchTerm, $options: "i" } },
+          { brand: { $regex: searchTerm, $options: "i" } },
+          { fitType: { $regex: searchTerm, $options: "i" } },
+          { "category.label": { $regex: searchTerm, $options: "i" } },
+          { "variantFields.value": { $regex: searchTerm, $options: "i" } },
+        ],
+      })
+        .limit(50)
+        .select("-__v -createdAt -updatedAt");
+      if (productList.length == 0 && searchTerm.length > 1) {
+        return await getProductsBySearch(searchTerm.slice(0, -1));
+      }
+
+      return productList;
+    }
+    let products = await getProductsBySearch(req.query.searchTerm || "");
+    if (products.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        statusMsg: "No Product Found",
+      });
+    }
+    res.json(products);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
+};

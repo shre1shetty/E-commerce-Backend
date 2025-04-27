@@ -6,6 +6,7 @@ import {
   deleteFilterType,
   getFilter,
   getFilterType,
+  getFilterWithSubFilter,
   updateFilter,
   updateFilterType,
 } from "../controller/Filter.controller.js";
@@ -14,6 +15,7 @@ import { upload } from "../multer.js";
 const router = Router();
 
 router.get("/getFilter", getFilter);
+router.get("/getFilterWithSubFilter", getFilterWithSubFilter);
 router.get("/getFilterType", getFilterType);
 router.post("/addFilter", addFilter);
 router.post("/addFilterType", addFilterType);

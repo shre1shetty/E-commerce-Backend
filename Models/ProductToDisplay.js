@@ -22,7 +22,7 @@ const productSchema = mongoose.Schema(
     ],
     Title: {
       type: String,
-      required: true,
+      // required: true,
     },
     name: {
       type: String,
@@ -51,6 +51,7 @@ const productSchema = mongoose.Schema(
     sold: {
       type: Number,
       required: true,
+      default: 0,
     },
     category: [
       {

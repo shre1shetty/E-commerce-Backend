@@ -189,3 +189,26 @@ export const deleteFilterType = async (req, res) => {
     });
   }
 };
+
+export const getFilterWithSubFilter = async (req, res) => {
+  try {
+    const FilterItems = await Filters.find().select(
+      "-createdAt -updatedAt -__v -subFilter.image"
+    );
+    if (FilterItems.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        statusMsg: "No Filter Found",
+      });
+    }
+    res.status(200).json({
+      data: FilterItems,
+      statusCode: 200,
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: error.message,
+    });
+  }
+};

@@ -19,6 +19,10 @@ const InventorySchema = mongoose.Schema(
       unique: true,
       required: true,
     },
+    productType: {
+      type: String,
+      required: true,
+    },
     price: {
       type: String,
       required: true,
@@ -40,19 +44,14 @@ const InventorySchema = mongoose.Schema(
     fabric: {
       type: String,
     },
-    sizes: [
-      {
-        type: String,
-        required: true,
-      },
-    ],
     brand: {
       type: String,
     },
-    colors: [
+    variantFields: [
       {
-        type: String,
-        required: true,
+        field: { type: String, required: true },
+        value: [{ type: String, required: true }],
+        flag: { type: String, required: true },
       },
     ],
     fitType: {
