@@ -8,6 +8,7 @@ export const getVariant = async (req, res) => {
         _id: data.id,
         name: data.name,
         variantCount: data.fields?.length,
+        Fields: data.fields,
       }))
     );
   } catch (error) {
