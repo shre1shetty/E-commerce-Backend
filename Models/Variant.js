@@ -13,6 +13,9 @@ const VariantSchema = mongoose.Schema(
           type: String,
           unique: true,
         },
+        flag: {
+          type: String,
+        },
       },
     ],
   },

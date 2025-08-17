@@ -92,10 +92,12 @@ const productSchema = mongoose.Schema(
             type: Number,
             required: true,
           },
-          picture: {
-            type: String,
-            // required: true,
-          },
+          picture: [
+            {
+              type: String,
+              // required: true,
+            },
+          ],
         },
       },
     ],

@@ -3,9 +3,14 @@ import { UserSchema } from "../Models/Login.js";
 export const LoginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await UserSchema.findOne({ username, password });
+    const user = await UserSchema.findOne({
+      $or: [
+        { username: username, password: password },
+        { email: username, password: password },
+      ],
+    });
     if (!user) {
-      res.json({
+      return res.json({
         statusCode: 404,
         statusMsg: "Invalid Username or password",
       });

@@ -3,6 +3,7 @@ import {
   addProduct,
   getProduct,
   getProductByCategory,
+  getProductByFilters,
   getProductById,
   getSearchProduct,
   updateProduct,
@@ -16,5 +17,5 @@ router.post("/getProducts", getProduct);
 router.post("/getProductById", getProductById);
 router.get("/getProductByCategory", getProductByCategory);
 router.get("/getProductBySearch", getSearchProduct);
-
+router.post("/search", getProductByFilters);
 export const ProductRoutes = router;

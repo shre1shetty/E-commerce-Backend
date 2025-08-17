@@ -9,13 +9,20 @@ import mongodb from "mongodb";
 import { LoginRoutes } from "./Routes/loginRoutes.js";
 import { LayoutRoutes } from "./Routes/layoutRoutes.js";
 import dotenv from "dotenv";
+import { UserRoutes } from "./Routes/userRoutes.js";
+import { ratingRoutes } from "./Routes/ratingRoutes.js";
+import { CartRoutes } from "./Routes/cartRoutes.js";
+import { PaymentRoutes } from "./Routes/paymentRoutes.js";
+import { stageRoutes } from "./Routes/stageRoutes.js";
+import { workFlowDefinationRoutes } from "./Routes/workFlowDefinationRoutes.js";
+import { orderRoutes } from "./Routes/orderRoutes.js";
 const app = express();
 dotenv.config();
 const corsOpts = {
   origin: "*",
 
   methods: ["GET", "POST"],
-
+  exposedHeaders: "Content-Disposition",
   allowedHeaders: ["Content-Type"],
 };
 app.use(express.json());
@@ -52,6 +59,13 @@ app.use("/Variants", VariantRoutes);
 app.use("/Products", ProductRoutes);
 app.use("/Layout", LayoutRoutes);
 app.use("/Login", LoginRoutes);
+app.use("/User", UserRoutes);
+app.use("/Rating", ratingRoutes);
+app.use("/Cart", CartRoutes);
+app.use("/Payments", PaymentRoutes);
+app.use("/Orders", orderRoutes);
+app.use("/Stage", stageRoutes);
+app.use("/WorkFlowDefination", workFlowDefinationRoutes);
 
 app.get("/file", async (req, res) => {
   try {
@@ -69,9 +83,13 @@ app.get("/file", async (req, res) => {
         if (!files || files.length === 0) {
           return res.status(404).send("File not found");
         }
-
+        console.log(files[0]);
         // Set the content type and stream the file
         res.set("Content-Type", files[0].contentType);
+        res.set(
+          "Content-Disposition",
+          `attachment; filename=${files[0].filename}`
+        );
         gfs
           .openDownloadStream(fileId)
           .on("error", (err) => {
@@ -135,55 +153,3 @@ export async function deleteFile(fileId) {
     return false;
   }
 }
-
-// app.get("/files", async (req, res) => {
-//   try {
-//     let files = await gfs.find().toArray();
-//     const readStream = gfs.openDownloadStream(files[3]._id);
-//     // readStream
-//     //   .on("error", (err) => {
-//     //     console.error(err);
-//     //     res.status(404).send("File not found");
-//     //   })
-//     //   .pipe(res);
-
-//     let chunks = []; // Array to store file chunks
-
-//     // Capture chunks as they are read from the stream
-//     readStream.on("data", (chunk) => {
-//       chunks.push(chunk); // Add chunk to array
-//     });
-
-//     // When the stream ends, send the chunks as an object or array
-//     readStream.on("end", () => {
-//       // Combine the chunks into a single buffer or send them as an array of chunks
-//       const fileBuffer = Buffer.concat(chunks);
-
-//       // For example, return the combined buffer or chunks as a JSON response
-//       res.json({
-//         filename: files[3].filename,
-//         fileSize: fileBuffer.length,
-//         chunks: chunks.length,
-//         data: fileBuffer.toString("base64"), // Example of sending the data as base64
-//       });
-//     });
-
-//     // Handle any errors in the stream
-//     readStream.on("error", (err) => {
-//       console.error("Stream error:", err);
-//       res.status(500).send("Error reading file");
-//     });
-//   } catch (err) {
-//     console.log(err);
-//     res.json({ err });
-//   }
-// });
-
-// app.get("/file", async (req, res) => {
-//   let files = await gfs.find().toArray();
-//   const data = await getFileContentById(
-//     new mongoose.Types.ObjectId("677a64b83ec69f2f48574505")
-//   );
-//   // console.log(data);
-//   res.json(data);
-// });

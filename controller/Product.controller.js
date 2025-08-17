@@ -36,22 +36,6 @@ export const getProductById = async (req, res) => {
     let products = await Products.find({ _id: req.query.id })
       .select("-__v -createdAt -updatedAt")
       .lean();
-    for (const product of products) {
-      // Update pictures array
-      product.pictures = await Promise.all(
-        product.pictures.map(async (picture) => {
-          return await getFileContentById(new mongoose.Types.ObjectId(picture));
-        })
-      );
-
-      for (const variant of product.variantValues) {
-        if (variant.values.picture) {
-          variant.values.picture = await getFileContentById(
-            new mongoose.Types.ObjectId(variant.values.picture)
-          );
-        }
-      }
-    }
 
     res.json(products[0]);
   } catch (error) {
@@ -67,13 +51,18 @@ export const addProduct = async (req, res) => {
   try {
     const body = req.body;
     body.variantValues.forEach((variant, index) => {
+      variant.values.picture = [];
       const pictureKey = `variantValues[${index}][values][picture]`;
-      const uploadedPicture = req.files.find(
-        (file) => file.fieldname === pictureKey
+      const uploadedPicture = req.files.filter((file) =>
+        file.fieldname.includes(pictureKey)
       );
-      if (uploadedPicture) {
+      // console.log(uploadedPicture);
+      if (uploadedPicture && uploadedPicture.length > 0) {
+        uploadedPicture.forEach((file) => {
+          console.log(variant.values);
+          variant.values.picture.push(file.id.toString());
+        });
         // Assign the file ID (from GridFS) to the variant's picture
-        variant.values.picture = uploadedPicture.id.toString(); // Save the file ID
       }
     });
     body.pictures = [];
@@ -113,13 +102,18 @@ export const updateProduct = async (req, res) => {
 
     const body = req.body;
     body.variantValues.forEach((variant, index) => {
+      variant.values.picture = [];
       const pictureKey = `variantValues[${index}][values][picture]`;
-      const uploadedPicture = req.files.find(
-        (file) => file.fieldname === pictureKey
+      const uploadedPicture = req.files.filter((file) =>
+        file.fieldname.includes(pictureKey)
       );
-      if (uploadedPicture) {
+      // console.log(uploadedPicture);
+      if (uploadedPicture && uploadedPicture.length > 0) {
+        uploadedPicture.forEach((file) => {
+          console.log(variant.values);
+          variant.values.picture.push(file.id.toString());
+        });
         // Assign the file ID (from GridFS) to the variant's picture
-        variant.values.picture = uploadedPicture.id.toString(); // Save the file ID
       }
     });
     body.pictures = [];
@@ -158,7 +152,7 @@ export const updateProduct = async (req, res) => {
 export const getProductByCategory = async (req, res) => {
   try {
     let products = await Products.find({ "category.value": req.query.id })
-      .select("-createdAt -updatedAt -__v -variantValues")
+      .select("-createdAt -updatedAt -__v")
       .lean();
     if (products.length === 0) {
       return res.status(404).json({
@@ -208,6 +202,52 @@ export const getSearchProduct = async (req, res) => {
         statusMsg: "No Product Found",
       });
     }
+    res.json(products);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
+};
+
+export const getProductByFilters = async (req, res) => {
+  try {
+    const { fabric, brand, fitType, category, variantFields } = req.body;
+
+    // Dynamically construct the $or array
+    const filters = [];
+    if (fabric) filters.push({ fabric: { $regex: fabric, $options: "i" } });
+    if (brand) filters.push({ brand: { $regex: brand, $options: "i" } });
+    if (fitType) filters.push({ fitType: { $regex: fitType, $options: "i" } });
+    if (category)
+      filters.push({ "category.label": { $regex: category, $options: "i" } });
+    if (variantFields)
+      filters.push({
+        "variantFields.value": { $regex: variantFields, $options: "i" },
+      });
+
+    // If no filters are provided, return an empty array or a 400 error
+    if (filters.length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        statusMsg: "No filters provided",
+      });
+    }
+
+    // Query the database with the constructed filters
+    const products = await Products.find({ $or: filters }).select(
+      "-__v -createdAt -updatedAt"
+    );
+
+    if (products.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        statusMsg: "No Product Found",
+      });
+    }
+
     res.json(products);
   } catch (error) {
     console.log(error);

@@ -169,14 +169,15 @@ export const editLayout = async (req, res) => {
       .select("-__v -createdAt -updatedAt")
       .lean();
     layout = layout[0];
-    if (layout)
+    if (layout.logo && layout.logo.length > 0)
       layout.logo = await getFileContentById(
         new mongoose.Types.ObjectId(layout.logo)
       );
     for (const row of layout.headerElement.rows) {
-      row.file = await getFileContentById(
-        new mongoose.Types.ObjectId(row.file)
-      );
+      if (row.file && row.file.length > 0)
+        row.file = await getFileContentById(
+          new mongoose.Types.ObjectId(row.file)
+        );
       delete row._id;
     }
     delete layout._id;

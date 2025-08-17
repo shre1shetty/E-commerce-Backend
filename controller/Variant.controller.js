@@ -130,11 +130,11 @@ export const addVariantField = async (req, res) => {
 
 export const updateVariantField = async (req, res) => {
   // const newItem = new Variants(req.body);
-  const { name, id, _id } = req.body;
+  const { name, id, _id, flag } = req.body;
   try {
     Variants.findOneAndUpdate(
       { _id: id, "fields._id": _id },
-      { $set: { "fields.$.name": name } }
+      { $set: { "fields.$.name": name, "fields.$.flag": flag } }
     )
       .then((resp) => {
         Variants.find({ _id: id, "fields._id": _id })
@@ -147,12 +147,13 @@ export const updateVariantField = async (req, res) => {
             });
           });
       })
-      .catch((error) =>
+      .catch((error) => {
+        console.log(error);
         res.json({
           statusMsg: "Cannot find the Filter",
           statusCode: 404,
-        })
-      );
+        });
+      });
   } catch (error) {
     res.status(500).json({
       statusCode: 500,
