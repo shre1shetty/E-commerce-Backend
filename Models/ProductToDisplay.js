@@ -38,7 +38,8 @@ const productSchema = mongoose.Schema(
       required: true,
     },
     productType: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Variants",
       required: true,
     },
     productTypeId: {
@@ -91,6 +92,10 @@ const productSchema = mongoose.Schema(
           inStock: {
             type: Number,
             required: true,
+          },
+          sold: {
+            type: Number,
+            default: 0,
           },
           picture: [
             {

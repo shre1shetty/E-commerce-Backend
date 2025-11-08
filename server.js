@@ -16,17 +16,22 @@ import { PaymentRoutes } from "./Routes/paymentRoutes.js";
 import { stageRoutes } from "./Routes/stageRoutes.js";
 import { workFlowDefinationRoutes } from "./Routes/workFlowDefinationRoutes.js";
 import { orderRoutes } from "./Routes/orderRoutes.js";
+import { dashboardRoutes } from "./Routes/dashboardRoutes.js";
+import { addressRoutes } from "./Routes/addressRoutes.js";
+import { requireRole, verifyToken } from "./Middleware/auth.js";
+import cookieParser from "cookie-parser";
 const app = express();
 dotenv.config();
 const corsOpts = {
-  origin: "*",
-
+  origin: "http://localhost:5173",
   methods: ["GET", "POST"],
   exposedHeaders: "Content-Disposition",
-  allowedHeaders: ["Content-Type"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // This is the key setting
 };
 app.use(express.json());
 app.use(cors(corsOpts));
+app.use(cookieParser());
 
 let gfs;
 
@@ -66,7 +71,8 @@ app.use("/Payments", PaymentRoutes);
 app.use("/Orders", orderRoutes);
 app.use("/Stage", stageRoutes);
 app.use("/WorkFlowDefination", workFlowDefinationRoutes);
-
+app.use("/Dashboard", verifyToken, requireRole("admin"), dashboardRoutes);
+app.use("/Address", addressRoutes);
 app.get("/file", async (req, res) => {
   try {
     // Validate file ID

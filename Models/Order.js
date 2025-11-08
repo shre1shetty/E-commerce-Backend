@@ -9,9 +9,19 @@ const orderSchema = mongoose.Schema(
     },
     products: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Products",
-        required: true,
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Products",
+          required: true,
+        },
+        variant: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
       },
     ],
     amount: {
@@ -81,7 +91,7 @@ const orderSchema = mongoose.Schema(
 orderSchema.virtual("status", {
   ref: "WorkFlowDefination",
   localField: "statusId",
-  foreignField: "stageFrom",
+  foreignField: "stageTo",
   justOne: true,
 });
 

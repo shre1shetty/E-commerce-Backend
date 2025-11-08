@@ -35,3 +35,41 @@ export const getRatingsByProductId = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getRecentRatings = async (req, res) => {
+  try {
+    const ratings = await Rating.aggregate([
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $lookup: {
+          from: "Users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userId",
+        },
+      },
+      {
+        $unwind: "$userId",
+      },
+      {
+        $project: {
+          comment: 1,
+          createdAt: 1,
+          rating: 1,
+          productId: 1,
+          username: "$userId.username",
+          email: "$userId.email",
+        },
+      },
+    ]);
+    res.json(ratings);
+  } catch (error) {
+    console.error("Error fetching ratings:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

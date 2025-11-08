@@ -1,4 +1,7 @@
+import { populate } from "dotenv";
 import { workFlowDefination } from "../Models/WorkFlowDefination.js";
+import { WorkFlowModal } from "../Models/WorkFlowHistory.js";
+import { Order } from "../Models/Order.js";
 
 export const addWorflowStage = async (req, res) => {
   try {
@@ -89,5 +92,77 @@ export const deleteWorkFlowStage = async (req, res) => {
   } catch (error) {
     console.log("Error deleting workflow stage:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const getWorkFlowHistory = async (req, res) => {
+  try {
+    const { orderId } = req.query;
+    const workFlowHistory = await WorkFlowModal.find({ orderId }).populate([
+      {
+        path: "createdBy",
+      },
+      {
+        path: "workFlowStatusId",
+        // populate: {
+        //   path: "stageTo stageFrom",
+        //   select: "stageName",
+        // },
+        select: "stageName",
+      },
+    ]);
+    const workFlowDefinations = await workFlowDefination
+      .find()
+      .populate("stageTo");
+    const filteredworkFlowDefinations = workFlowDefinations.filter(
+      (item) =>
+        !item.stageTo.rejectStage &&
+        !workFlowHistory.some(
+          (history) =>
+            history.workFlowStatusId &&
+            history.workFlowStatusId._id.toString() === item._id.toString()
+        )
+    );
+    res.status(200).json({
+      statusMsg: "Workflow history retrieved successfully",
+      statusCode: 200,
+      data: { workFlowHistory, filteredworkFlowDefinations },
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getNextStage = async (req, res) => {
+  try {
+    const { currentStageId } = req.query;
+    const nextStages = await workFlowDefination
+      .find({ stageFrom: currentStageId })
+      .select("stageTo stageName _id");
+    res.status(200).json(nextStages);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const proceedToNextStage = async (req, res) => {
+  try {
+    const { workFlowStatusId } = req.body;
+    if (!workFlowStatusId) {
+      return res.status(400).json({ message: "Missing statusId" });
+    }
+    const workFLowEntry = new WorkFlowModal(req.body);
+    await workFLowEntry.save();
+    await Order.findByIdAndUpdate(req.body.orderId, {
+      statusId: req.body.statusId,
+    });
+    res
+      .status(200)
+      .json({ message: "Workflow updated successfully", statusCode: 200 });
+  } catch (error) {
+    console.error("Error confirming order:", error);
+    res.status(500).json({ message: "Internal server error", statusCode: 500 });
   }
 };

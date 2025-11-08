@@ -1,6 +1,11 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { Order } from "../Models/Order.js";
+import { workFlowDefination } from "../Models/WorkFlowDefination.js";
+import { WorkFlowModal } from "../Models/WorkFlowHistory.js";
+import { Products } from "../Models/ProductToDisplay.js";
+import { Cart } from "../Models/Cart.js";
+import mongoose from "mongoose";
 
 export const createOrder = async (req, res) => {
   try {
@@ -48,27 +53,54 @@ export const verifyOrder = (req, res) => {
   }
 };
 
-export const confirmOrder = (req, res) => {
+export const confirmOrder = async (req, res) => {
   try {
     const { orderId, paymentId, paymentMethod } = req.body;
     if (!orderId || !paymentId || !paymentMethod) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    const nextStageId = await workFlowDefination.findOne({
+      stageFrom: req.body.statusId,
+    });
+    if (!nextStageId) {
+      return res.status(400).json({ message: "Invalid statusId" });
+    }
+    req.body.statusId = nextStageId.stageTo;
     const order = new Order(req.body);
-    order
-      .save()
-      .then(() => {
-        res
-          .status(201)
-          .json({ message: "Order confirmed successfully", order });
+    await order.save().catch((error) => {
+      console.error("Error saving order:", error);
+      res.status(500).json({ message: "Internal server error" });
+    });
+    const workFlowEntry = new WorkFlowModal({
+      workFlowStatusId: nextStageId._id,
+      createdBy: req.body.userId,
+      remarks: "Order placed",
+      orderId: order._id,
+    });
+    await workFlowEntry.save().catch((error) => {
+      console.error("Error saving workflow history:", error);
+    });
+    await Promise.all(
+      req.body.products.map(async ({ productId, variant, quantity }) => {
+        await Products.findOneAndUpdate(
+          { _id: productId, "variantValues._id": variant },
+          {
+            $inc: {
+              "variantValues.$.values.inStock": -quantity,
+              "variantValues.$.values.sold": quantity,
+              sold: quantity,
+            },
+          }
+        );
       })
-      .catch((error) => {
-        console.error("Error saving order:", error);
-        res.status(500).json({ message: "Internal server error" });
-      });
+    );
+    await Cart.deleteMany({
+      userId: new mongoose.Types.ObjectId(req.body.userId),
+    });
+    res.status(201).json({ message: "Order confirmed successfully", order });
   } catch (error) {
-    clg.error("Error confirming order:", error);
+    console.error("Error confirming order:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
