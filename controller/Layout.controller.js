@@ -34,6 +34,13 @@ export const addLayout = async (req, res) => {
         )
         .id.toString();
     });
+    body.subHeaderElement?.rows?.forEach((row, index) => {
+      row.file = req.files
+        .find(
+          (file) => file.fieldname === `subHeaderElement[rows][${index}][file]`
+        )
+        .id.toString();
+    });
     const layout = new Layout(body);
     await layout.save();
     res.json({ statusMsg: "Record Saved Succesfully", statusCode: 200 });
@@ -77,6 +84,17 @@ export const updateLayout = async (req, res) => {
       });
     }
 
+    if (body.subHeaderElement?.rows) {
+      body.subHeaderElement.rows.forEach((row, index) => {
+        const rowFile = req.files?.find(
+          (file) => file.fieldname === `subHeaderElement[rows][${index}][file]`
+        );
+        if (rowFile) {
+          row.file = rowFile.id.toString();
+        }
+      });
+    }
+
     // Update the layout in the database
     Layout.findOneAndUpdate({ _id: req.query.id }, body, { new: true })
       .then((updatedLayout) => {
@@ -93,6 +111,13 @@ export const updateLayout = async (req, res) => {
         }
         if (oldValues.headerElement?.rows) {
           oldValues.headerElement.rows.forEach(({ file }) => {
+            if (file) {
+              deleteFile(file);
+            }
+          });
+        }
+        if (oldValues.subHeaderElement?.rows) {
+          oldValues.subHeaderElement.rows.forEach(({ file }) => {
             if (file) {
               deleteFile(file);
             }
@@ -165,10 +190,9 @@ export const getActiveLayout = async (req, res) => {
 
 export const editLayout = async (req, res) => {
   try {
-    let layout = await Layout.find({ _id: req.query.id })
+    let layout = await Layout.findOne({ _id: req.query.id })
       .select("-__v -createdAt -updatedAt")
       .lean();
-    layout = layout[0];
     if (layout.logo && layout.logo.length > 0)
       layout.logo = await getFileContentById(
         new mongoose.Types.ObjectId(layout.logo)
@@ -179,6 +203,15 @@ export const editLayout = async (req, res) => {
           new mongoose.Types.ObjectId(row.file)
         );
       delete row._id;
+    }
+    if (layout.subHeaderElement) {
+      for (const row of layout.subHeaderElement?.rows) {
+        if (row.file && row.file.length > 0)
+          row.file = await getFileContentById(
+            new mongoose.Types.ObjectId(row.file)
+          );
+        delete row._id;
+      }
     }
     delete layout._id;
     res.json(layout);

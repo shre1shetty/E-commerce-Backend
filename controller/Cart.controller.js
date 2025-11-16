@@ -34,9 +34,9 @@ export const AddtoCart = async (req, res) => {
 export const GetCart = async (req, res) => {
   try {
     const { userId } = req.query;
-    // if (!userId) {
-    //   return res.status(400).json({ message: "User ID is required" });
-    // }
+    if (!userId) {
+      return res.status(400).json({ message: "Please login first !" });
+    }
     const cart = await Cart.findOne({ userId })
       .populate("products.productId")
       .lean();

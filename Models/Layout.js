@@ -6,6 +6,9 @@ const LayoutSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    themeColor: {
+      type: String,
+    },
     logo: {
       type: String,
       required: true,
@@ -15,11 +18,37 @@ const LayoutSchema = new mongoose.Schema(
         type: String,
         required: true,
       },
+      size: {
+        type: Number,
+        default: 100,
+      },
       rows: [
         {
           file: {
             type: String,
             required: true,
+          },
+          url: {
+            type: String,
+            required: true,
+          },
+        },
+      ],
+    },
+    subHeaderElement: {
+      size: {
+        type: Number,
+        default: 100,
+      },
+      rows: [
+        {
+          file: {
+            type: String,
+            required: true,
+          },
+          size: {
+            type: Number,
+            default: 100,
           },
           url: {
             type: String,
@@ -96,4 +125,10 @@ const LayoutSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+LayoutSchema.pre("findOneAndUpdate", function (next) {
+  console.log(this.subHeaderElement);
+  next();
+});
+
 export const Layout = mongoose.model("Layout", LayoutSchema, "Layout");

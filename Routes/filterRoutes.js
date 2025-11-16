@@ -11,11 +11,12 @@ import {
   updateFilterType,
 } from "../controller/Filter.controller.js";
 import { upload } from "../multer.js";
-
+import { verifyToken, requireRole } from "../Middleware/auth.js";
 const router = Router();
 
-router.get("/getFilter", getFilter);
 router.get("/getFilterWithSubFilter", getFilterWithSubFilter);
+router.use(verifyToken, requireRole("admin"));
+router.get("/getFilter", getFilter);
 router.get("/getFilterType", getFilterType);
 router.post("/addFilter", addFilter);
 router.post("/addFilterType", addFilterType);

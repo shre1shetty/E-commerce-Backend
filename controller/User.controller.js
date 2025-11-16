@@ -98,18 +98,8 @@ export const refresh = async (req, res) => {
       (err, decoded) => {
         if (err) return res.sendStatus(403);
 
-        const { accessToken, refreshToken: newRefreshToken } =
-          generateTokens(user);
-        user.refreshToken = newRefreshToken;
-        user.save();
-        res.cookie("refreshToken", refreshToken, {
-          httpOnly: true,
-          // secure: true, // true in production (HTTPS)
-          // sameSite: "strict",
-          path: "/",
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-        res.json({ accessToken });
+        const { accessToken } = generateTokens(user);
+        res.json({ accessToken, role: user.role });
       }
     );
   } catch (error) {

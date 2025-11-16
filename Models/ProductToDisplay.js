@@ -112,6 +112,17 @@ const productSchema = mongoose.Schema(
         // required: true,
       },
     ],
+    tags: [
+      {
+        type: String,
+      },
+    ],
+    AdditionalSpecification: [
+      {
+        key: { type: String },
+        value: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );

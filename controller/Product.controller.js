@@ -90,9 +90,6 @@ export const addProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     Products.find({ _id: req.query.id }).then((resp) => {
-      resp[0].pictures.forEach((picture) => {
-        deleteFile(picture);
-      });
       resp[0].variantValues.forEach((variant) => {
         if (variant.values.picture) {
           deleteFile(variant.values.picture);
@@ -214,8 +211,8 @@ export const getSearchProduct = async (req, res) => {
 
 export const getProductByFilters = async (req, res) => {
   try {
-    const { fabric, brand, fitType, category, variantFields } = req.body;
-
+    const { fabric, brand, fitType, category, variantFields, tags } = req.body;
+    console.log(tags);
     // Dynamically construct the $or array
     const filters = [];
     if (fabric) filters.push({ fabric: { $regex: fabric, $options: "i" } });
@@ -227,7 +224,12 @@ export const getProductByFilters = async (req, res) => {
       filters.push({
         "variantFields.value": { $regex: variantFields, $options: "i" },
       });
-
+    if (tags)
+      filters.push({
+        tags: {
+          $in: tags.split(",").map((term) => new RegExp(`^${term}$`, "i")),
+        },
+      });
     // If no filters are provided, return an empty array or a 400 error
     if (filters.length === 0) {
       return res.status(400).json({
@@ -235,7 +237,6 @@ export const getProductByFilters = async (req, res) => {
         statusMsg: "No filters provided",
       });
     }
-
     // Query the database with the constructed filters
     const products = await Products.find({ $or: filters }).select(
       "-__v -createdAt -updatedAt"

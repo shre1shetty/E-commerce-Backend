@@ -20,6 +20,7 @@ import { dashboardRoutes } from "./Routes/dashboardRoutes.js";
 import { addressRoutes } from "./Routes/addressRoutes.js";
 import { requireRole, verifyToken } from "./Middleware/auth.js";
 import cookieParser from "cookie-parser";
+import { themeRoutes } from "./Routes/themeRoute.js";
 const app = express();
 dotenv.config();
 const corsOpts = {
@@ -60,7 +61,7 @@ app.listen(PORT, () => {
 
 app.use("/Inventory", InventoryRoute);
 app.use("/Filters", FilterRoute);
-app.use("/Variants", VariantRoutes);
+app.use("/Variants", verifyToken, requireRole("admin"), VariantRoutes);
 app.use("/Products", ProductRoutes);
 app.use("/Layout", LayoutRoutes);
 app.use("/Login", LoginRoutes);
@@ -69,10 +70,16 @@ app.use("/Rating", ratingRoutes);
 app.use("/Cart", CartRoutes);
 app.use("/Payments", PaymentRoutes);
 app.use("/Orders", orderRoutes);
-app.use("/Stage", stageRoutes);
-app.use("/WorkFlowDefination", workFlowDefinationRoutes);
+app.use("/Stage", verifyToken, requireRole("admin"), stageRoutes);
+app.use(
+  "/WorkFlowDefination",
+  verifyToken,
+  requireRole("admin"),
+  workFlowDefinationRoutes
+);
 app.use("/Dashboard", verifyToken, requireRole("admin"), dashboardRoutes);
 app.use("/Address", addressRoutes);
+app.use("/Theme", themeRoutes);
 app.get("/file", async (req, res) => {
   try {
     // Validate file ID

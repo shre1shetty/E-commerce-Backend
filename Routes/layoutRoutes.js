@@ -9,13 +9,15 @@ import {
   getLogo,
   updateLayout,
 } from "../controller/Layout.controller.js";
+import { requireRole, verifyToken } from "../Middleware/auth.js";
 
 const router = new Router();
+router.get("/getLayout", getActiveLayout);
+router.get("/getLogo", getLogo);
+router.get("/getFooter", getFooter);
+router.use(verifyToken, requireRole("admin"));
 router.get("/getLayouts", getLayouts);
 router.get("/editLayout", editLayout);
 router.post("/addLayout", upload.any(), addLayout);
 router.post("/updateLayout", upload.any(), updateLayout);
-router.get("/getLayout", getActiveLayout);
-router.get("/getLogo", getLogo);
-router.get("/getFooter", getFooter);
 export const LayoutRoutes = router;
