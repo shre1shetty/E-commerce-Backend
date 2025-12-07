@@ -54,6 +54,7 @@ app.use((req, res, next) => {
 let gfs;
 
 // MongoDB Connection
+console.log(process.env.MONGO_URI);
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
