@@ -1,9 +1,11 @@
 import multer from "multer";
 import { GridFsStorage } from "multer-gridfs-storage";
+import dotenv from "dotenv";
 
+dotenv.config();
 // Configure GridFS Storage
 export const storage = new GridFsStorage({
-  url: "mongodb://127.0.0.1:27017/E-Commerce",
+  url: process.env.MONGO_URI,
   file: (req, file) => {
     return {
       bucketName: "uploads", // The GridFS bucket name
