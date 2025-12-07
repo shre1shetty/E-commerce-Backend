@@ -10,15 +10,15 @@ export const getMonthlySales = async (req, res) => {
     const month = new Date().getMonth();
     const monthlySales = await Order.aggregate([
       {
+        $match: {
+          $or: [{ _id: month + 1 }, { _id: month }],
+        },
+      },
+      {
         $group: {
           _id: { $month: "$createdAt" },
           totalSales: { $sum: "$amount" },
           totalOrders: { $sum: 1 },
-        },
-      },
-      {
-        $match: {
-          $or: [{ _id: month + 1 }, { _id: month }],
         },
       },
       {

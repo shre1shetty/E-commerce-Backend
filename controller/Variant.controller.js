@@ -140,7 +140,6 @@ export const updateVariantField = async (req, res) => {
         Variants.find({ _id: id, "fields._id": _id })
           .select({ fields: 1 })
           .then((resp) => {
-            console.log(resp);
             res.json({
               statusMsg: "Record Updated Successfully",
               statusCode: 200,

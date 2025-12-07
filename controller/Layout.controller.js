@@ -95,8 +95,22 @@ export const updateLayout = async (req, res) => {
       });
     }
 
+    if (body.sections) {
+      body.sections.forEach((row, index) => {
+        const rowFile = req.files?.find(
+          (file) => file.fieldname === `sections[${index}][overlayBgImage]`
+        );
+        if (rowFile) {
+          row.overlayBgImage = rowFile.id.toString();
+        }
+      });
+    }
+
     // Update the layout in the database
-    Layout.findOneAndUpdate({ _id: req.query.id }, body, { new: true })
+    Layout.findOneAndUpdate({ _id: req.query.id }, body, {
+      upsert: true,
+      new: true,
+    })
       .then((updatedLayout) => {
         if (!updatedLayout) {
           return res.status(404).json({
@@ -124,6 +138,14 @@ export const updateLayout = async (req, res) => {
           });
         }
 
+        if (oldValues.sections) {
+          oldValues.sections.forEach(({ overlayBgImage }) => {
+            if (overlayBgImage) {
+              deleteFile(overlayBgImage);
+            }
+          });
+        }
+
         res.json({
           statusMsg: "Record Updated Successfully",
           statusCode: 200,
@@ -145,39 +167,79 @@ export const updateLayout = async (req, res) => {
     });
   }
 };
+
+export const toggleLayoutActiveStatus = async (req, res) => {
+  try {
+    const { layoutId, isActive } = req.body;
+    await Layout.updateOne({ _id: layoutId }, { isActive: isActive });
+    res.status(200).json({
+      statusMsg: "Layout status updated successfully",
+      statusCode: 200,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
+};
+
 export const getActiveLayout = async (req, res) => {
   try {
-    let layout = await Layout.find({ isActive: true })
+    const layout = await Layout.findOne({ isActive: true })
       .select("-__v -createdAt -updatedAt")
       .lean();
-    layout = layout[0];
-    // if (layout)
-    //   layout.logo = await getFileContentById(
-    //     new mongoose.Types.ObjectId(layout.logo)
-    //   );
-    // for (const row of layout.headerElement.rows) {
-    //   row.file = await getFileContentById(
-    //     new mongoose.Types.ObjectId(row.file)
-    //   );
-    // }
-    for (const category of layout.category) {
-      const { subFilter } = await Filters.findOne({
-        "subFilter._id": category.value,
-      }).select("subFilter.$");
-      if (subFilter[0].image) {
-        category.image = subFilter[0].image;
-      }
-    }
 
-    layout.topProduct = await Promise.all(
-      layout.topProduct.map(async (product) => {
-        return await Products.findOne({ _id: product.value })
-          .select(
-            "-__v -createdAt -updatedAt -category -inStock -brand -sold -productType -fitType -fabric"
-          )
-          .lean();
-      })
+    //category-start
+    const categoryIds = layout.category.map((c) => c.value);
+    const filters = await Filters.find({
+      "subFilter._id": { $in: categoryIds },
+    });
+    const map = {};
+    filters.forEach((f) => {
+      f.subFilter.forEach((sf) => {
+        map[sf._id] = sf.image;
+      });
+    });
+    layout.category = layout.category.map((cat) => ({
+      ...cat,
+      image: map[cat.value] || null,
+    }));
+    //category-end
+
+    //sections-start
+    const sectionIds = layout.sections.reduce(
+      (acc, { products }) => (acc = [...acc, ...products.map((p) => p.value)]),
+      []
     );
+
+    const FilteredProducts = await Products.find({
+      _id: { $in: sectionIds },
+    })
+      .select(
+        "-__v -createdAt -updatedAt -category -inStock -brand -sold -productType -fitType -fabric"
+      )
+      .lean();
+
+    layout.sections = layout.sections.map((val) => ({
+      ...val,
+      products: val.products.map(({ value }) =>
+        FilteredProducts.find(({ _id }) => value.toString() === _id.toString())
+      ),
+    }));
+
+    //sections-end
+
+    // layout.topProduct = await Promise.all(
+    //   layout.topProduct.map(async (product) => {
+    //     return await Products.findOne({ _id: product.value })
+    //       .select(
+    //         "-__v -createdAt -updatedAt -category -inStock -brand -sold -productType -fitType -fabric"
+    //       )
+    //       .lean();
+    //   })
+    // );
     res.json(layout);
   } catch (error) {
     console.log(error);
@@ -203,6 +265,13 @@ export const editLayout = async (req, res) => {
           new mongoose.Types.ObjectId(row.file)
         );
       delete row._id;
+    }
+    for (const section of layout.sections) {
+      if (section.overlayBgImage && section.overlayBgImage !== "")
+        section.overlayBgImage = await getFileContentById(
+          new mongoose.Types.ObjectId(section.overlayBgImage)
+        );
+      delete section._id;
     }
     if (layout.subHeaderElement) {
       for (const row of layout.subHeaderElement?.rows) {

@@ -21,24 +21,41 @@ import { addressRoutes } from "./Routes/addressRoutes.js";
 import { requireRole, verifyToken } from "./Middleware/auth.js";
 import cookieParser from "cookie-parser";
 import { themeRoutes } from "./Routes/themeRoute.js";
+import { wishlistRoutes } from "./Routes/wishListRoutes.js";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 const app = express();
 dotenv.config();
 const corsOpts = {
-  origin: "http://localhost:5173",
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
   methods: ["GET", "POST"],
   exposedHeaders: "Content-Disposition",
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true, // This is the key setting
 };
+app.set("trust proxy", 1);
+app.use(helmet());
 app.use(express.json());
 app.use(cors(corsOpts));
 app.use(cookieParser());
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+});
 
 let gfs;
 
 // MongoDB Connection
 mongoose
-  .connect("mongodb://127.0.0.1:27017/E-Commerce")
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("Connected to MongoDB");
     const conn = mongoose.connection;
@@ -79,6 +96,7 @@ app.use(
 );
 app.use("/Dashboard", verifyToken, requireRole("admin"), dashboardRoutes);
 app.use("/Address", addressRoutes);
+app.use("/Wishlist", wishlistRoutes);
 app.use("/Theme", themeRoutes);
 app.get("/file", async (req, res) => {
   try {
@@ -96,7 +114,6 @@ app.get("/file", async (req, res) => {
         if (!files || files.length === 0) {
           return res.status(404).send("File not found");
         }
-        console.log(files[0]);
         // Set the content type and stream the file
         res.set("Content-Type", files[0].contentType);
         res.set(

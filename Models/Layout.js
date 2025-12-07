@@ -69,16 +69,57 @@ const LayoutSchema = new mongoose.Schema(
         },
       },
     ],
-    topProduct: [
+    sections: [
       {
-        label: {
+        section: {
           type: String,
           required: true,
         },
-        value: {
+        type: {
+          type: String,
+          required: true,
+          enum: ["Banner", "Category"],
+        },
+        overlayText: {
           type: String,
           required: true,
         },
+        overlaySubText: {
+          type: String,
+          required: true,
+        },
+        overlayBgImage: {
+          type: String,
+          default: "",
+        },
+        categoryName: {
+          type: String,
+          required: true,
+        },
+        prodPerRow: {
+          type: Number,
+          required: true,
+        },
+        gap: {
+          type: Number,
+          required: true,
+        },
+        size: {
+          type: Number,
+          required: true,
+        },
+        products: [
+          {
+            label: {
+              type: String,
+              required: true,
+            },
+            value: {
+              type: String,
+              required: true,
+            },
+          },
+        ],
       },
     ],
     footerDetails: {
@@ -127,7 +168,6 @@ const LayoutSchema = new mongoose.Schema(
 );
 
 LayoutSchema.pre("findOneAndUpdate", function (next) {
-  console.log(this.subHeaderElement);
   next();
 });
 

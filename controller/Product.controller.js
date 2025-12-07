@@ -21,6 +21,94 @@ export const getProduct = async (req, res) => {
       };
     });
 
+    // const { userId } = req.body;
+
+    // let pipeline = [
+    //   {
+    //     $project: {
+    //       __v: 0,
+    //       createdAt: 0,
+    //       updatedAt: 0,
+    //       variantValues: 0,
+    //       pictures: 0,
+    //       Title: 0,
+    //       productType: 0,
+    //       category: {
+    //         $reduce: {
+    //           input: "$category.label",
+    //           initialValue: "",
+    //           in: {
+    //             $cond: [
+    //               { eq: ["$$this", ""] },
+    //               "$$this",
+    //               { $concat: ["$$value", ",", "$$this"] },
+    //             ],
+    //           },
+    //         },
+    //       },
+    //       products: {
+    //         $concat: [
+    //           {
+    //             $arrayElemAt: ["$variantFields.field", 0],
+    //           },
+    //           ":",
+    //           {
+    //             $toString: {
+    //               $arrayElemAt: ["$variantFields.value", 0],
+    //             },
+    //           },
+    //           " ",
+    //           {
+    //             $arrayElemAt: ["$variantFields.field", 1],
+    //           },
+    //           ":",
+    //           {
+    //             $toString: {
+    //               $arrayElemAt: ["$variantFields.value", 1],
+    //             },
+    //           },
+    //         ],
+    //       },
+    //     },
+    //   },
+    // ];
+
+    // if (userId) {
+    //   pipeline.push(
+    //     {
+    //       $lookup: {
+    //         from: "wishlists",
+    //         let: { prodId: "$_id" },
+    //         pipeline: [
+    //           {
+    //             $matchup: {
+    //               $expr: {
+    //                 $and: [
+    //                   { $eq: ["$productId", "$$prodId"] },
+    //                   { $eq: ["$userId", new mongoose.Types.ObjectId(userId)] },
+    //                 ],
+    //               },
+    //             },
+    //           },
+    //         ],
+    //         as: "wishlist",
+    //       },
+    //     },
+    //     {
+    //       $addFields: {
+    //         isWishListed: { $gt: [{ $size: "$wishlist" }, 0] },
+    //       },
+    //     },
+    //     {
+    //       $project: {
+    //         wishlist: 0,
+    //       },
+    //     }
+    //   );
+    // }
+
+    // const products = await Products.aggregate(pipeline);
+
     res.json(products);
   } catch (error) {
     console.log(error);
@@ -59,7 +147,6 @@ export const addProduct = async (req, res) => {
       // console.log(uploadedPicture);
       if (uploadedPicture && uploadedPicture.length > 0) {
         uploadedPicture.forEach((file) => {
-          console.log(variant.values);
           variant.values.picture.push(file.id.toString());
         });
         // Assign the file ID (from GridFS) to the variant's picture
@@ -107,7 +194,6 @@ export const updateProduct = async (req, res) => {
       // console.log(uploadedPicture);
       if (uploadedPicture && uploadedPicture.length > 0) {
         uploadedPicture.forEach((file) => {
-          console.log(variant.values);
           variant.values.picture.push(file.id.toString());
         });
         // Assign the file ID (from GridFS) to the variant's picture
@@ -170,7 +256,6 @@ export const getProductByCategory = async (req, res) => {
 export const getSearchProduct = async (req, res) => {
   try {
     async function getProductsBySearch(searchTerm) {
-      console.log(searchTerm);
       if (searchTerm.length === 0) {
         return []; // prevent infinite recursion
       }
