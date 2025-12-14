@@ -1,5 +1,7 @@
 import { Inventory } from "../Models/Inventory.js";
 
+import XLSX from "xlsx";
+
 export const getInventory = async (req, res) => {
   try {
     const InventoryItems = await Inventory.find();
@@ -71,6 +73,35 @@ export const deleteProduct = async (req, res) => {
       });
     });
   } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: error.message,
+    });
+  }
+};
+
+export const uploadToInventory = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    const workbook = XLSX.read(req.file.buffer, {
+      type: "buffer",
+    });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const data = XLSX.utils.sheet_to_json(worksheet, {
+      defval: "",
+      raw: false,
+    });
+    await Inventory.insertMany(data, { ordered: false });
+    res.json({
+      statusMsg: "Inventory Uploaded Successfully",
+      statusCode: 200,
+    });
+  } catch (error) {
+    console.log(error);
     res.status(500).json({
       statusCode: 500,
       statusMsg: error.message,

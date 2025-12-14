@@ -77,7 +77,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-app.use("/Inventory", InventoryRoute);
+app.use("/Inventory", verifyToken, requireRole("admin"), InventoryRoute);
 app.use("/Filters", FilterRoute);
 app.use("/Variants", verifyToken, requireRole("admin"), VariantRoutes);
 app.use("/Products", ProductRoutes);

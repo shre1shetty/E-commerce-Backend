@@ -14,3 +14,7 @@ export const storage = new GridFsStorage({
   },
 });
 export const upload = multer({ storage });
+
+export const tempUpload = multer({
+  storage: multer.memoryStorage(),
+});

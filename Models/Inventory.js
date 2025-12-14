@@ -1,17 +1,4 @@
 import mongoose from "mongoose";
-const categorySchema = new mongoose.Schema(
-  {
-    label: {
-      type: String,
-      required: true,
-    },
-    value: {
-      type: String,
-      required: true,
-    },
-  },
-  { _id: false } // Disables `_id` generation for subdocuments
-);
 const InventorySchema = mongoose.Schema(
   {
     name: {
@@ -23,10 +10,6 @@ const InventorySchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    price: {
-      type: String,
-      required: true,
-    },
     description: {
       type: String,
     },
@@ -34,30 +17,28 @@ const InventorySchema = mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
+      set: (value) => (value == null ? 1 : parseInt(value)),
     },
     sold: {
       type: Number,
       default: 0,
       set: (value) => (value == null ? 0 : value),
     },
-    category: [categorySchema],
+    category: {
+      type: String,
+      required: true,
+    },
     fabric: {
       type: String,
     },
     brand: {
       type: String,
     },
-    variantFields: [
-      {
-        field: { type: String, required: true },
-        value: [{ type: String, required: true }],
-        flag: { type: String, required: true },
-      },
-    ],
     fitType: {
       type: String,
     },
   },
+  { strict: false },
   { timestamps: true }
 );
 

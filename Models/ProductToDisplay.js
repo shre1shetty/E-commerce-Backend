@@ -31,7 +31,6 @@ const productSchema = mongoose.Schema(
     },
     price: {
       type: String,
-      required: true,
     },
     description: {
       type: String,
@@ -85,9 +84,19 @@ const productSchema = mongoose.Schema(
           required: true,
         },
         values: {
+          purchasePrice: {
+            type: String,
+            required: true,
+            default: "0",
+          },
           price: {
             type: String,
             required: true,
+          },
+          discountedPrice: {
+            type: String,
+            required: true,
+            default: "0",
           },
           inStock: {
             type: Number,
