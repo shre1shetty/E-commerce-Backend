@@ -132,6 +132,18 @@ const productSchema = mongoose.Schema(
         value: { type: String },
       },
     ],
+    ratingSum: {
+      type: Number,
+      default: 0,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
+    },
+    avgRating: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

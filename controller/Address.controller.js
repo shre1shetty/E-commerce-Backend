@@ -15,10 +15,10 @@ export const addAddress = async (req, res) => {
 export const updateAddress = async (req, res) => {
   try {
     const id = req.body._id;
-    delete req.boyd._id;
+    delete req.body._id;
     await Address.findOneAndUpdate(
       {
-        _id: id,
+        _id: new mongoose.Types.ObjectId(id),
       },
       req.body
     );

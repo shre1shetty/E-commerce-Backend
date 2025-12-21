@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Products } from "./ProductToDisplay.js";
 
 const ratingSchema = new mongoose.Schema(
   {
@@ -29,5 +30,35 @@ const ratingSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+ratingSchema.post("save", async function () {
+  await Products.findByIdAndUpdate(this.productId, [
+    {
+      $set: {
+        ratingSum: {
+          $add: [{ $ifNull: ["$ratingSum", 0] }, this.rating],
+        },
+        ratingCount: {
+          $add: [{ $ifNull: ["$ratingCount", 0] }, 1],
+        },
+      },
+    },
+    {
+      $set: {
+        avgRating: {
+          $round: [
+            {
+              $divide: [
+                { $ifNull: ["$ratingSum", this.rating] },
+                { $ifNull: ["$ratingCount", 1] },
+              ],
+            },
+            1,
+          ],
+        },
+      },
+    },
+  ]);
+});
 
 export const Rating = mongoose.model("Rating", ratingSchema, "Ratings");

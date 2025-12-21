@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Cart } from "../Models/Cart.js";
 
 export const AddtoCart = async (req, res) => {
@@ -50,8 +51,19 @@ export const GetCart = async (req, res) => {
 export const getCartCount = async (req, res) => {
   try {
     const { userId } = req.query;
-    const count = await Cart.countDocuments({ userId });
-    res.status(200).json({ count });
+    const products = await Cart.aggregate([
+      {
+        $match: { userId: new mongoose.Types.ObjectId(userId) },
+      },
+      {
+        $project: {
+          count: { $size: "$products" },
+        },
+      },
+    ]);
+    res
+      .status(200)
+      .json({ count: products.length > 0 ? products[0].count : 0 });
   } catch (error) {
     console.error("Error while fetching cart count:", error);
     res.status(500).json({ message: "Internal server error" });

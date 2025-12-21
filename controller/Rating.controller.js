@@ -14,7 +14,11 @@ export const addRating = async (req, res) => {
     await newRating.save();
     res
       .status(201)
-      .json({ message: "Rating added successfully", rating: newRating });
+      .json({
+        status: 200,
+        message: "Rating added successfully",
+        rating: newRating,
+      });
   } catch (error) {
     console.error("Error adding rating:", error);
     res.status(500).json({ message: "Internal server error" });
