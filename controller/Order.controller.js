@@ -1,10 +1,9 @@
 import mongoose from "mongoose";
 import { Order } from "../Models/Order.js";
-import { WorkFlowModal } from "../Models/WorkFlowHistory.js";
 
 export const getAdminOrders = async (req, res) => {
   try {
-    const orders = await Order.find()
+    const orders = await Order.find({ vendorId: req.vendor })
       .populate([
         {
           path: "userId",
@@ -18,7 +17,7 @@ export const getAdminOrders = async (req, res) => {
           path: "status",
         },
       ])
-      .select("-__v")
+      .select("-__v -vendorId")
       .lean({ virtuals: true });
     res.status(200).json(orders);
   } catch (error) {
@@ -30,7 +29,7 @@ export const getAdminOrders = async (req, res) => {
 export const getAdminOrdersById = async (req, res) => {
   try {
     const { id } = req.body;
-    const orders = await Order.findOne({ _id: id })
+    const orders = await Order.findOne({ _id: id, vendorId: req.vendor })
       .populate([
         {
           path: "userId",
@@ -44,7 +43,7 @@ export const getAdminOrdersById = async (req, res) => {
           path: "status",
         },
       ])
-      .select("-__v")
+      .select("-__v -vendorId")
       .lean({ virtuals: true });
     res.status(200).json(orders);
   } catch (error) {
@@ -58,6 +57,7 @@ export const getOrdersbyType = async (req, res) => {
     const { type, userId } = req.body;
     let unfilteredOrders = await Order.find({
       userId: new mongoose.Types.ObjectId(userId),
+      vendorId: req.vendor,
     })
       .populate([
         {
@@ -73,7 +73,7 @@ export const getOrdersbyType = async (req, res) => {
         },
       ])
       .sort({ createdAt: -1 })
-      .select("-__v")
+      .select("-__v -vendorId")
       .lean({ virtuals: true });
     if (type === "Current") {
       res.status(200).json(

@@ -17,6 +17,10 @@ const FilterSchema = mongoose.Schema(
           type: String,
           default: null,
         },
+        showOnSearch: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
   },

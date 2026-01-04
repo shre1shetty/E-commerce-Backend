@@ -7,6 +7,14 @@ const VariantSchema = mongoose.Schema(
       unique: true,
       required: true,
     },
+    gstSlabs: [
+      {
+        minPrice: { type: Number, required: true },
+        maxPrice: { type: Number },
+        gstPercentage: { type: Number, required: true },
+        _id: false,
+      },
+    ],
     fields: [
       {
         name: {

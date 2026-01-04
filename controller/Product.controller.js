@@ -1,12 +1,11 @@
-import mongoose from "mongoose";
 import { Products } from "../Models/ProductToDisplay.js";
-import { deleteFile, getFileContentById } from "../server.js";
+import { deleteFile } from "../server.js";
 
 export const getProduct = async (req, res) => {
   try {
-    let products = await Products.find()
+    let products = await Products.find({ vendorId: req.vendor })
       .select(
-        "-__v -createdAt -updatedAt -variantValues -pictures -Title -productType"
+        "-__v -createdAt -updatedAt -variantValues -pictures -vendorId -Title -productType"
       )
       .lean();
     products = products.map((product) => {
@@ -121,8 +120,11 @@ export const getProduct = async (req, res) => {
 
 export const getProductById = async (req, res) => {
   try {
-    let products = await Products.find({ _id: req.query.id })
-      .select("-__v -createdAt -updatedAt")
+    let products = await Products.find({
+      _id: req.query.id,
+      vendorId: req.vendor,
+    })
+      .select("-__v -createdAt -updatedAt -vendorId")
       .lean();
 
     res.json(products[0]);
@@ -138,6 +140,7 @@ export const getProductById = async (req, res) => {
 export const addProduct = async (req, res) => {
   try {
     const body = req.body;
+    body.vendorId = req.vendor;
     body.variantValues.forEach((variant, index) => {
       variant.values.picture = [];
       const pictureKey = `variantValues[${index}][values][picture]`;
@@ -176,15 +179,16 @@ export const addProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    Products.find({ _id: req.query.id }).then((resp) => {
+    Products.find({ _id: req.query.id, vendorId: req.vendor }).then((resp) => {
       resp[0].variantValues.forEach((variant) => {
         if (variant.values.picture) {
-          deleteFile(variant.values.picture);
+          deleteFile(variant.values.picture, req.vendor);
         }
       });
     });
 
     const body = req.body;
+    body.vendorId = req.vendor;
     body.variantValues.forEach((variant, index) => {
       variant.values.picture = [];
       const pictureKey = `variantValues[${index}][values][picture]`;
@@ -209,7 +213,7 @@ export const updateProduct = async (req, res) => {
       });
     }
     Products.findOneAndUpdate(
-      { _id: req.query.id },
+      { _id: req.query.id, vendorId: req.vendor },
       { $set: body },
       { new: true } // Return the updated document
     )
@@ -234,8 +238,18 @@ export const updateProduct = async (req, res) => {
 
 export const getProductByCategory = async (req, res) => {
   try {
-    let products = await Products.find({ "category.value": req.query.id })
-      .select("-createdAt -updatedAt -__v")
+    const ids = req.query.id.split(",");
+    let products = await Products.find({
+      $and: [
+        ...ids.map((id) => ({
+          category: {
+            $elemMatch: { value: id },
+          },
+        })),
+        { vendorId: req.vendor },
+      ],
+    })
+      .select("-createdAt -updatedAt -__v -vendorId")
       .lean();
     if (products.length === 0) {
       return res.status(404).json({
@@ -260,6 +274,7 @@ export const getSearchProduct = async (req, res) => {
         return []; // prevent infinite recursion
       }
       const productList = await Products.find({
+        vendorId: req.vendor,
         $or: [
           { name: { $regex: searchTerm, $options: "i" } },
           { fabric: { $regex: searchTerm, $options: "i" } },
@@ -270,7 +285,7 @@ export const getSearchProduct = async (req, res) => {
         ],
       })
         .limit(50)
-        .select("-__v -createdAt -updatedAt");
+        .select("-__v -createdAt -updatedAt -vendorId");
       if (productList.length == 0 && searchTerm.length > 1) {
         return await getProductsBySearch(searchTerm.slice(0, -1));
       }
@@ -297,7 +312,6 @@ export const getSearchProduct = async (req, res) => {
 export const getProductByFilters = async (req, res) => {
   try {
     const { fabric, brand, fitType, category, variantFields, tags } = req.body;
-    console.log(tags);
     // Dynamically construct the $or array
     const filters = [];
     if (fabric) filters.push({ fabric: { $regex: fabric, $options: "i" } });
@@ -323,9 +337,10 @@ export const getProductByFilters = async (req, res) => {
       });
     }
     // Query the database with the constructed filters
-    const products = await Products.find({ $or: filters }).select(
-      "-__v -createdAt -updatedAt"
-    );
+    const products = await Products.find({
+      vendorId: req.vendor,
+      $or: filters,
+    }).select("-__v -createdAt -updatedAt -vendorId");
 
     if (products.length === 0) {
       return res.status(404).json({

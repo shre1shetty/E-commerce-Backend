@@ -2,6 +2,8 @@ import { populate } from "dotenv";
 import { workFlowDefination } from "../Models/WorkFlowDefination.js";
 import { WorkFlowModal } from "../Models/WorkFlowHistory.js";
 import { Order } from "../Models/Order.js";
+import eventBus from "../event/Event.js";
+import mongoose from "mongoose";
 
 export const addWorflowStage = async (req, res) => {
   try {
@@ -158,6 +160,45 @@ export const proceedToNextStage = async (req, res) => {
     await Order.findByIdAndUpdate(req.body.orderId, {
       statusId: req.body.statusId,
     });
+    const isRejectStage = await workFlowDefination.aggregate([
+      {
+        $match: { _id: new mongoose.Types.ObjectId(workFlowStatusId) },
+      },
+      {
+        $lookup: {
+          from: "Stages",
+          localField: "stageTo",
+          foreignField: "_id",
+          as: "stageDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "Stages",
+          localField: "stageFrom",
+          foreignField: "_id",
+          as: "currentStageDetails",
+        },
+      },
+      {
+        $project: {
+          rejectStage: { $arrayElemAt: ["$stageDetails.rejectStage", 0] },
+          stageFrom: { $arrayElemAt: ["$currentStageDetails.stageName", 0] },
+        },
+      },
+    ]);
+    console.log(isRejectStage);
+    if (isRejectStage[0]?.rejectStage) {
+      console.log("in");
+      eventBus.emit("ORDER_REJECTED", {
+        orderId: req.body.orderId,
+        customerName: req.body.username,
+        rejectionStage: isRejectStage[0].stageFrom,
+        rejectionReason: req.body.remarks,
+        storeName: "StoresStore",
+        customerEmail: req.body.email,
+      });
+    }
     res
       .status(200)
       .json({ message: "Workflow updated successfully", statusCode: 200 });

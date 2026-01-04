@@ -5,7 +5,6 @@ import { InventoryRoute } from "./Routes/inventoryRoutes.js";
 import { FilterRoute } from "./Routes/filterRoutes.js";
 import { VariantRoutes } from "./Routes/variantsRoutes.js";
 import { ProductRoutes } from "./Routes/productRoutes.js";
-import mongodb from "mongodb";
 import { LoginRoutes } from "./Routes/loginRoutes.js";
 import { LayoutRoutes } from "./Routes/layoutRoutes.js";
 import dotenv from "dotenv";
@@ -24,6 +23,9 @@ import { themeRoutes } from "./Routes/themeRoute.js";
 import { wishlistRoutes } from "./Routes/wishListRoutes.js";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import "./event/handlers/RejectHandler.js";
+import { vendorRoutes } from "./Routes/vendorRoutes.js";
+import { resolveVendorByDomain } from "./Middleware/vendorIdentification.js";
 const app = express();
 dotenv.config();
 const corsOpts = {
@@ -60,8 +62,8 @@ mongoose
   .then(() => {
     console.log("Connected to MongoDB");
     const conn = mongoose.connection;
-    gfs = new mongodb.GridFSBucket(conn.db, {
-      bucketName: "uploads", // Specify the bucket name (default is 'fs')
+    gfs = new mongoose.mongo.GridFSBucket(conn.db, {
+      bucketName: "uploads",
     });
   })
   .catch((err) => console.error("MongoDB connection error:", err));
@@ -76,10 +78,10 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
+app.use(resolveVendorByDomain);
 app.use("/Inventory", verifyToken, requireRole("admin"), InventoryRoute);
 app.use("/Filters", FilterRoute);
-app.use("/Variants", verifyToken, requireRole("admin"), VariantRoutes);
+app.use("/Variants", VariantRoutes);
 app.use("/Products", ProductRoutes);
 app.use("/Layout", LayoutRoutes);
 app.use("/Login", LoginRoutes);
@@ -99,6 +101,7 @@ app.use("/Dashboard", verifyToken, requireRole("admin"), dashboardRoutes);
 app.use("/Address", addressRoutes);
 app.use("/Wishlist", wishlistRoutes);
 app.use("/Theme", themeRoutes);
+app.use("/Vendor", vendorRoutes);
 app.get("/file", async (req, res) => {
   try {
     // Validate file ID
@@ -109,7 +112,7 @@ app.get("/file", async (req, res) => {
     const fileId = new mongoose.Types.ObjectId(req.query.id);
     // Find the file in GridFS
     gfs
-      .find({ _id: fileId })
+      .find({ _id: fileId, "metadata.vendorId": req.vendor })
       .toArray()
       .then((files) => {
         if (!files || files.length === 0) {
@@ -138,46 +141,57 @@ app.get("/file", async (req, res) => {
     res.status(500).send("Error retrieving file");
   }
 });
-export const getFileContentById = (ID) => {
-  return new Promise((resolve, reject) => {
+export const getFileContentById = (ID, vendorId) => {
+  return new Promise(async (resolve, reject) => {
     try {
-      gfs
-        .find({ _id: ID })
-        .toArray()
-        .then((files) => {
-          delete files[0]?._id; // Remove the _id field from the file object
-          delete files[0]?.chunkSize; // Remove the _id field from the file object
-          delete files[0]?.length; // Remove the _id field from the file object
-          const readStream = gfs.openDownloadStream(ID);
-          let chunks = []; // Array to store file chunks
+      const fileId =
+        typeof ID === "string" ? new mongoose.Types.ObjectId(ID) : ID;
 
-          readStream.on("data", (chunk) => {
-            chunks.push(chunk); // Add each chunk to the array
-          });
+      const files = await gfs
+        .find({ _id: fileId, "metadata.vendorId": vendorId })
+        .toArray();
 
-          readStream.on("end", () => {
-            const fileBuffer = Buffer.concat(chunks); // Combine all chunks into a single buffer
-            resolve({
-              ...files[0],
-              base64: fileBuffer.toString("base64"),
-            }); // Resolve with the base64-encoded file content
-          });
+      if (!files || files.length === 0) {
+        return reject(new Error("File not found or unauthorized"));
+      }
 
-          readStream.on("error", (err) => {
-            console.error("Stream error:", err);
-            reject(err); // Reject the promise with the error
-          });
+      const file = files[0];
+
+      const readStream = gfs.openDownloadStream(fileId);
+      const chunks = [];
+
+      readStream.on("data", (chunk) => chunks.push(chunk));
+
+      readStream.on("end", () => {
+        const fileBuffer = Buffer.concat(chunks);
+
+        resolve({
+          filename: file.filename,
+          contentType: file.contentType,
+          uploadDate: file.uploadDate,
+          metadata: file.metadata,
+          base64: fileBuffer.toString("base64"),
         });
+      });
+
+      readStream.on("error", (err) => {
+        reject(err);
+      });
     } catch (err) {
-      console.log(err);
-      reject(err); // Reject the promise if there's an error
+      reject(err);
     }
   });
 };
 
-export async function deleteFile(fileId) {
+export async function deleteFile(fileId, vendorId) {
   try {
-    await gfs.delete(new mongoose.Types.ObjectId(fileId));
+    const files = await gfs
+      .find({ _id: fileId, "metadata.vendorId": vendorId })
+      .toArray();
+
+    if (!files.length) throw new Error("Unauthorized");
+
+    await gfs.delete(fileId);
     return true;
   } catch (error) {
     console.error("Error deleting file:", error);

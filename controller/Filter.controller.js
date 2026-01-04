@@ -1,4 +1,6 @@
+import mongoose from "mongoose";
 import { Filters } from "../Models/Filter.js";
+import { getFileContentById } from "../server.js";
 
 export const getFilter = async (req, res) => {
   try {
@@ -88,10 +90,21 @@ export const getFilterType = async (req, res) => {
   try {
     let FilterItems;
     if (req.query.id) {
-      FilterItems = await Filters.find({ _id: req.query.id }).select({
-        subFilter: 1,
-      });
+      FilterItems = await Filters.find({ _id: req.query.id })
+        .select({
+          subFilter: 1,
+        })
+        .lean();
       FilterItems = FilterItems.flatMap((data) => data.subFilter);
+      for (const filterItem of FilterItems) {
+        if (filterItem.image) {
+          const image = await getFileContentById(
+            new mongoose.Types.ObjectId(filterItem.image),
+            req.vendor
+          );
+          filterItem.image = image;
+        }
+      }
     } else {
       FilterItems = await Filters.find().select({
         subFilter: 1,
@@ -101,6 +114,7 @@ export const getFilterType = async (req, res) => {
 
     res.json(FilterItems);
   } catch (error) {
+    console.log(error);
     res.status(500).json({
       statusCode: 500,
       statusMsg: "Server Error",
@@ -146,7 +160,6 @@ export const updateFilterType = async (req, res) => {
         Filters.find({ _id: id, "subFilter._id": _id })
           .select({ subFilter: 1 })
           .then((resp) => {
-            console.log(resp);
             res.json({
               statusMsg: "Record Updated Successfully",
               statusCode: 200,
@@ -159,6 +172,37 @@ export const updateFilterType = async (req, res) => {
           statusCode: 404,
         })
       );
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: error.message,
+    });
+  }
+};
+
+export const toggleShowOnSearch = async (req, res) => {
+  try {
+    const { showOnSearch, id, _id } = req.body;
+    if (!showOnSearch || !id || !id)
+      res.status(400).json({
+        statusCode: 400,
+        statusMsg: "Invalid Data",
+      });
+    await Filters.findOneAndUpdate(
+      {
+        _id: id,
+        "subFilter._id": _id,
+      },
+      {
+        $set: {
+          "subFilter.$.showOnSearch": showOnSearch,
+        },
+      }
+    );
+    res.json({
+      statusMsg: "Record Updated Succesfully",
+      statusCode: 200,
+    });
   } catch (error) {
     res.status(500).json({
       statusCode: 500,
@@ -203,6 +247,56 @@ export const getFilterWithSubFilter = async (req, res) => {
       statusCode: 200,
     });
   } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: error.message,
+    });
+  }
+};
+
+export const getOptionsForSearch = async (req, res) => {
+  try {
+    const response = await Filters.aggregate([
+      {
+        $unwind: "$subFilter",
+      },
+      {
+        $match: { "subFilter.showOnSearch": true },
+      },
+      {
+        $lookup: {
+          from: "Filters",
+          let: { parentId: "$_id" },
+          pipeline: [
+            {
+              $match: { $expr: { $ne: ["$_id", "$$parentId"] } },
+            },
+          ],
+          as: "otherFilters",
+        },
+      },
+
+      {
+        $project: {
+          name: "$subFilter.name",
+          _id: "$subFilter._id",
+          otherFilters: {
+            $map: {
+              input: "$otherFilters",
+              as: "of",
+              in: {
+                _id: "$$of._id",
+                name: "$$of.name",
+                subFilter: "$$of.subFilter",
+              },
+            },
+          },
+        },
+      },
+    ]);
+    res.status(200).json(response);
+  } catch (error) {
+    console.log(error);
     res.status(500).json({
       statusCode: 500,
       statusMsg: error.message,

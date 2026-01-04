@@ -144,6 +144,11 @@ const productSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

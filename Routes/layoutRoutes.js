@@ -11,6 +11,7 @@ import {
   updateLayout,
 } from "../controller/Layout.controller.js";
 import { requireRole, verifyToken } from "../Middleware/auth.js";
+import { gridfsUploadMiddleware } from "../Middleware/gridfsUploadMiddleware.js";
 
 const router = new Router();
 router.get("/getLayout", getActiveLayout);
@@ -25,6 +26,11 @@ router.post(
 router.use(verifyToken, requireRole("admin"));
 router.get("/getLayouts", getLayouts);
 router.get("/editLayout", editLayout);
-router.post("/addLayout", upload.any(), addLayout);
-router.post("/updateLayout", upload.any(), updateLayout);
+router.post("/addLayout", upload.any(), gridfsUploadMiddleware, addLayout);
+router.post(
+  "/updateLayout",
+  upload.any(),
+  gridfsUploadMiddleware,
+  updateLayout
+);
 export const LayoutRoutes = router;

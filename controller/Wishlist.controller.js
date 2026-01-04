@@ -3,6 +3,7 @@ import { WishList } from "../Models/Wishlist.js";
 
 export const addToWishlist = async (req, res) => {
   try {
+    req.body.vendorId = req.vendor;
     const wishlistItem = new WishList(req.body);
     await wishlistItem.save();
     res.status(200).json({
@@ -21,6 +22,7 @@ export const getWishlist = async (req, res) => {
     if (!userId) return res.status(404).json(req.body);
     const wishList = await WishList.find({
       userId: new mongoose.Types.ObjectId(userId),
+      vendorId: req.vendor,
     }).select("productId -_id");
     res.status(200).json(wishList.map((item) => item.productId));
   } catch (error) {
@@ -38,6 +40,7 @@ export const removeFromWishList = async (req, res) => {
     await WishList.deleteOne({
       userId: new mongoose.Types.ObjectId(userId),
       productId: new mongoose.Types.ObjectId(productId),
+      vendorId: req.vendor,
     });
     res.status(200).json({ message: "Removed from wishlist" });
   } catch (error) {
@@ -54,7 +57,14 @@ export const getWishlistProductsByUserId = async (req, res) => {
     const wishlistProducts = await WishList.aggregate([
       {
         $match: {
-          userId: new mongoose.Types.ObjectId(userId),
+          $and: [
+            {
+              userId: new mongoose.Types.ObjectId(userId),
+            },
+            {
+              vendorId: req.vendor,
+            },
+          ],
         },
       },
       {

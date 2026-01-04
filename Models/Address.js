@@ -44,6 +44,11 @@ const AddressSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
   },
   {
     timestamps: true,

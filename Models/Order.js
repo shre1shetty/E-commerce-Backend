@@ -83,6 +83,11 @@ const orderSchema = mongoose.Schema(
         type: Number,
         required: true,
       },
+      vendorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        index: true,
+      },
     },
   },
   { timestamps: true }

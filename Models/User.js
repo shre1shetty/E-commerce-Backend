@@ -18,7 +18,7 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "superadmin"],
       default: "user",
     },
     contactNumber: {
@@ -35,6 +35,10 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
     refreshToken: { type: String },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      index: true,
+    },
   },
   { timestamps: true }
 );

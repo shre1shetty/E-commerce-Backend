@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { User } from "../Models/User.js";
 import { generateTokens } from "../Utils/token.js";
 import jwt from "jsonwebtoken";
@@ -17,6 +18,7 @@ export const addUser = async (req, res) => {
       contactNumber,
       address,
       pincode,
+      vendorId: req.vendor,
     });
     const user = await newUser.save();
     res
@@ -33,8 +35,26 @@ export const LoginUser = async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({
       $or: [
-        { username: username, password: password },
-        { email: username, password: password },
+        {
+          username: { $regex: username.trim(), $options: "i" },
+          password: password,
+          vendorId: req.vendor,
+        },
+        {
+          email: { $regex: username.trim(), $options: "i" },
+          password: password,
+          vendorId: req.vendor,
+        },
+        {
+          username: { $regex: username.trim(), $options: "i" },
+          password: password,
+          role: "superadmin",
+        },
+        {
+          email: { $regex: username.trim(), $options: "i" },
+          password: password,
+          role: "superadmin",
+        },
       ],
     });
     if (!user) {
@@ -52,6 +72,7 @@ export const LoginUser = async (req, res) => {
     delete _doc.createdAt; // Remove createdAt from response
     delete _doc.updatedAt; // Remove updatedAt from response
     delete _doc.refreshToken;
+    delete _doc.vendorId;
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true,
@@ -90,7 +111,7 @@ export const refresh = async (req, res) => {
       process.env.NODE_ENV === "production" ? req.cookies : req.body;
     if (!refreshToken) return res.sendStatus(401);
 
-    const user = await User.findOne({ refreshToken });
+    const user = await User.findOne({ refreshToken, vendorId: req.vendor });
     if (!user) return res.sendStatus(403);
 
     jwt.verify(
@@ -113,7 +134,106 @@ export const refresh = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-  const { refreshToken } = req.cookies;
-  await User.updateOne({ refreshToken }, { $unset: { refreshToken: "" } });
-  res.json({ message: "Logged out" });
+  try {
+    const { refreshToken } = req.cookies;
+    await User.updateOne(
+      { refreshToken, vendorId: req.vendor },
+      { $unset: { refreshToken: "" } }
+    );
+    res.json({ message: "Logged out" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
+};
+
+export const getuserDetails = async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId)
+      res
+        .status(400)
+        .json({ statusCode: 400, statusMsg: "userId is required" });
+    const user = await User.findOne({
+      _id: new mongoose.Types.ObjectId(userId),
+      vendorId: req.vendor,
+    }).select("username email contactNumber");
+    res.status(200).json(user);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
+};
+
+export const updateDetails = async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId) res.status(400).json({ statusMsg: "userId is required" });
+    const { username, email, contactNumber } = req.body;
+    if (!username || !email || !contactNumber)
+      res
+        .status(400)
+        .json({ statusMsg: "username,email and contactNumber are required" });
+    await User.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(userId), vendorId: req.vendor },
+      { username, email, contactNumber }
+    );
+    res.status(200).json({
+      statusCode: 200,
+      statusMsg: "User details updated successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
+};
+
+export const updatePassword = async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId)
+      res
+        .status(400)
+        .json({ statusCode: 400, statusMsg: "userId is required" });
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword)
+      res.status(400).json({
+        statusCode: 400,
+        statusMsg: "Old and New password is required",
+      });
+
+    User.findOne({
+      _id: new mongoose.Types.ObjectId(userId),
+      vendorId: req.vendor,
+    }).then((user) => {
+      if (user.password !== currentPassword) {
+        return res
+          .status(400)
+          .json({ statusCode: 400, statusMsg: "Old password is incorrect" });
+      } else {
+        user.password = newPassword;
+        user.save();
+        return res.status(200).json({
+          statusCode: 200,
+          statusMsg: "Password updated successfully",
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: "Server Error",
+    });
+  }
 };

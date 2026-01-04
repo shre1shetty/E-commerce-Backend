@@ -18,7 +18,12 @@ export const getMonthlySales = async (req, res) => {
       },
       {
         $match: {
-          $or: [{ _id: month + 1 }, { _id: month }],
+          $and: [
+            { vendorId: req.vendor },
+            {
+              $or: [{ _id: month + 1 }, { _id: month }],
+            },
+          ],
         },
       },
       {
@@ -28,10 +33,15 @@ export const getMonthlySales = async (req, res) => {
     const salesByDays = await Order.aggregate([
       {
         $match: {
-          createdAt: {
-            $gte: startOfMonth,
-            $lt: startOfNextMonth,
-          },
+          $and: [
+            { vendorId: req.vendor },
+            {
+              createdAt: {
+                $gte: startOfMonth,
+                $lt: startOfNextMonth,
+              },
+            },
+          ],
         },
       },
       {

@@ -1,17 +1,21 @@
+import mongoose from "mongoose";
 import { Variants } from "../Models/Variant.js";
 
 export const getVariant = async (req, res) => {
   try {
-    const VariantItems = await Variants.find();
-    res.json(
-      VariantItems.map((data) => ({
-        _id: data.id,
-        name: data.name,
-        variantCount: data.fields?.length,
-        Fields: data.fields,
-      }))
-    );
+    const VariantItems = await Variants.aggregate([
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          gstSlabs: 1,
+          variantCount: { $size: { $ifNull: ["$fields", []] } },
+        },
+      },
+    ]);
+    res.json(VariantItems);
   } catch (error) {
+    console.log(error);
     res.status(500).json({
       statusCode: 500,
       statusMsg: "Server Error",
@@ -174,6 +178,33 @@ export const deleteVariantField = async (req, res) => {
       });
     });
   } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      statusMsg: error.message,
+    });
+  }
+};
+
+export const getGSTFilter = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        statusMsg: "Invalid or missing 'ids' in request body",
+      });
+    }
+    const objectIds = ids.map((id) => new mongoose.Types.ObjectId(id));
+    const filtersData = await Variants.aggregate([
+      {
+        $match: {
+          _id: { $in: objectIds },
+        },
+      },
+    ]);
+    res.status(200).json(filtersData);
+  } catch (error) {
+    console.log(error);
     res.status(500).json({
       statusCode: 500,
       statusMsg: error.message,

@@ -29,6 +29,11 @@ const CartSchema = new mongoose.Schema(
         },
       },
     ],
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

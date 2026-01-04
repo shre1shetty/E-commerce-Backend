@@ -163,12 +163,21 @@ const LayoutSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
   },
   { timestamps: true }
 );
+LayoutSchema.index({ vendorId: 1, isActive: 1 });
 
-LayoutSchema.pre("findOneAndUpdate", function (next) {
-  next();
-});
+LayoutSchema.index(
+  { vendorId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isActive: true },
+  }
+);
 
 export const Layout = mongoose.model("Layout", LayoutSchema, "Layout");

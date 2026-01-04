@@ -3,6 +3,7 @@ import { Address } from "../Models/Address.js";
 
 export const addAddress = async (req, res) => {
   try {
+    req.body.vendorId = req.vendor;
     const newAddress = new Address(req.body);
     await newAddress.save();
     res.status(201).json({ message: "Address inserted successfully" });
@@ -16,9 +17,11 @@ export const updateAddress = async (req, res) => {
   try {
     const id = req.body._id;
     delete req.body._id;
+    req.body.vendorId = req.vendor;
     await Address.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(id),
+        vendorId: req.vendor,
       },
       req.body
     );
@@ -34,6 +37,7 @@ export const getAllAddressesById = async (req, res) => {
     const { userId } = req.query;
     const addresses = await Address.find({
       userId: new mongoose.Types.ObjectId(userId),
+      vendorId: req.vendor,
     })
       .select("-__v -createdAt -updatedAt")
       .lean();
