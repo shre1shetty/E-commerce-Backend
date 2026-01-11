@@ -21,6 +21,11 @@ const workFlowHistory = mongoose.Schema(
       ref: "Orders",
       required: true,
     },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

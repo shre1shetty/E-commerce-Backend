@@ -5,10 +5,14 @@ export const getVariant = async (req, res) => {
   try {
     const VariantItems = await Variants.aggregate([
       {
+        $match: { vendorId: req.vendor },
+      },
+      {
         $project: {
           _id: 1,
           name: 1,
           gstSlabs: 1,
+          Fields: "$fields",
           variantCount: { $size: { $ifNull: ["$fields", []] } },
         },
       },
@@ -24,6 +28,7 @@ export const getVariant = async (req, res) => {
 };
 
 export const addVariant = async (req, res) => {
+  req.body.vendorId = req.vendor;
   const newItem = new Variants(req.body);
   try {
     await newItem.save();
@@ -37,22 +42,20 @@ export const addVariant = async (req, res) => {
 };
 
 export const updateVariant = async (req, res) => {
-  // const newItem = new Variants(req.body);
-
+  req.body.vendorId = req.vendor;
   try {
     Variants.findOneAndUpdate(
       {
         _id: req.query.id,
+        vendorId: req.vendor,
       },
       req.body
     )
-      .then((resp) => {
-        Variants.findById(req.query.id).then((resp) =>
-          res.json({
-            statusMsg: "Record Updated Successfully",
-            statusCode: 200,
-          })
-        );
+      .then(() => {
+        res.json({
+          statusMsg: "Record Updated Successfully",
+          statusCode: 200,
+        });
       })
       .catch((error) =>
         res.json({
@@ -72,6 +75,7 @@ export const deleteVariant = async (req, res) => {
   try {
     Variants.deleteOne({
       _id: req.query.id,
+      vendorId: req.vendor,
     }).then((resp) => {
       res.json({
         statusMsg:
@@ -93,12 +97,15 @@ export const getVariantField = async (req, res) => {
   try {
     let VariantFields;
     if (req.query.id) {
-      VariantFields = await Variants.find({ _id: req.query.id }).select({
+      VariantFields = await Variants.find({
+        _id: req.query.id,
+        vendorId: req.vendor,
+      }).select({
         fields: 1,
       });
       VariantFields = VariantFields.flatMap((data) => data.fields);
     } else {
-      VariantFields = await Variants.find().select({
+      VariantFields = await Variants.find({ vendorId: req.vendor }).select({
         fields: 1,
       });
       VariantFields = VariantFields.flatMap((data) => data.fields);
@@ -118,6 +125,7 @@ export const addVariantField = async (req, res) => {
     await Variants.findOneAndUpdate(
       {
         _id: req.query.id,
+        vendorId: req.vendor,
       },
       {
         $push: { fields: req.body },
@@ -137,18 +145,14 @@ export const updateVariantField = async (req, res) => {
   const { name, id, _id, flag } = req.body;
   try {
     Variants.findOneAndUpdate(
-      { _id: id, "fields._id": _id },
+      { _id: id, "fields._id": _id, vendorId: req.vendor },
       { $set: { "fields.$.name": name, "fields.$.flag": flag } }
     )
       .then((resp) => {
-        Variants.find({ _id: id, "fields._id": _id })
-          .select({ fields: 1 })
-          .then((resp) => {
-            res.json({
-              statusMsg: "Record Updated Successfully",
-              statusCode: 200,
-            });
-          });
+        res.json({
+          statusMsg: "Record Updated Successfully",
+          statusCode: 200,
+        });
       })
       .catch((error) => {
         console.log(error);
@@ -169,7 +173,7 @@ export const deleteVariantField = async (req, res) => {
   try {
     const { id, itemId } = req.body;
     Variants.findOneAndUpdate(
-      { _id: id },
+      { _id: id, vendorId: req.vendor },
       { $pull: { fields: { _id: itemId } } }
     ).then((resp) => {
       res.json({
@@ -196,6 +200,9 @@ export const getGSTFilter = async (req, res) => {
     }
     const objectIds = ids.map((id) => new mongoose.Types.ObjectId(id));
     const filtersData = await Variants.aggregate([
+      {
+        $match: { vendorId: req.vendor },
+      },
       {
         $match: {
           _id: { $in: objectIds },

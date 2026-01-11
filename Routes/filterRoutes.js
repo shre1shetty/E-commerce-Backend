@@ -23,7 +23,12 @@ router.use(verifyToken, requireRole("admin"));
 router.get("/getFilter", getFilter);
 router.get("/getFilterType", getFilterType);
 router.post("/addFilter", addFilter);
-router.post("/addFilterType", addFilterType);
+router.post(
+  "/addFilterType",
+  upload.any(),
+  gridfsUploadMiddleware,
+  addFilterType
+);
 router.post("/updateFilter", updateFilter);
 router.post(
   "/updateFilterType",

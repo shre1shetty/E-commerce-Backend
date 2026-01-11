@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 import { Filters } from "../Models/Filter.js";
-import { getFileContentById } from "../server.js";
+import { deleteFile, getFileContentById } from "../server.js";
 
 export const getFilter = async (req, res) => {
   try {
-    const FilterItems = await Filters.find();
+    const FilterItems = await Filters.find({ vendorId: req.vendor });
     res.json(
       FilterItems.map((data) => ({
         _id: data.id,
@@ -21,6 +21,7 @@ export const getFilter = async (req, res) => {
 };
 
 export const addFilter = async (req, res) => {
+  req.body.vendorId = req.vendor;
   const newItem = new Filters(req.body);
   try {
     await newItem.save();
@@ -35,20 +36,22 @@ export const addFilter = async (req, res) => {
 
 export const updateFilter = async (req, res) => {
   // const newItem = new Filters(req.body);
-
+  req.body.vendorId = req.vendor;
   try {
     Filters.findOneAndUpdate(
       {
         _id: req.query.id,
+        vendorId: req.vendor,
       },
       req.body
     )
       .then((resp) => {
-        Filters.findById(req.query.id).then((resp) =>
-          res.json({
-            statusMsg: "Record Updated Successfully",
-            statusCode: 200,
-          })
+        Filters.findBy({ id: req.query.id, vendorId: req.vendor }).then(
+          (resp) =>
+            res.json({
+              statusMsg: "Record Updated Successfully",
+              statusCode: 200,
+            })
         );
       })
       .catch((error) =>
@@ -69,6 +72,7 @@ export const deleteFilter = async (req, res) => {
   try {
     Filters.deleteOne({
       _id: req.query.id,
+      vendorId: req.vendor,
     }).then((resp) => {
       res.json({
         statusMsg:
@@ -90,7 +94,10 @@ export const getFilterType = async (req, res) => {
   try {
     let FilterItems;
     if (req.query.id) {
-      FilterItems = await Filters.find({ _id: req.query.id })
+      FilterItems = await Filters.find({
+        _id: req.query.id,
+        vendorId: req.vendor,
+      })
         .select({
           subFilter: 1,
         })
@@ -106,7 +113,7 @@ export const getFilterType = async (req, res) => {
         }
       }
     } else {
-      FilterItems = await Filters.find().select({
+      FilterItems = await Filters.find({ vendorId: req.vendor }).select({
         subFilter: 1,
       });
       FilterItems = FilterItems.flatMap((data) => data.subFilter);
@@ -124,9 +131,14 @@ export const getFilterType = async (req, res) => {
 
 export const addFilterType = async (req, res) => {
   try {
+    req.body.vendorId = req.vendor;
+    req.body.image = req.files
+      .find((file) => file.fieldname === "image")
+      .id.toString();
     await Filters.findOneAndUpdate(
       {
         _id: req.query.id,
+        vendorId: req.vendor,
       },
       {
         $push: { subFilter: req.body },
@@ -140,39 +152,54 @@ export const addFilterType = async (req, res) => {
     });
   }
 };
-
 export const updateFilterType = async (req, res) => {
-  // const newItem = new Filters(req.body);
+  const session = await mongoose.startSession();
   const { name, id, _id } = req.body;
+
   try {
-    Filters.findOneAndUpdate(
-      { _id: id, "subFilter._id": _id },
+    session.startTransaction();
+
+    const imageFile = req.files?.find((file) => file.fieldname === "image");
+    const existing = await Filters.findOne(
+      { _id: id, "subFilter._id": _id, vendorId: req.vendor },
+      { "subFilter.$": 1 },
+      { session }
+    ).lean();
+
+    if (!existing) {
+      throw new Error("SubFilter not found");
+    }
+
+    const oldImageId = existing.subFilter[0].image;
+    console.log(oldImageId);
+    await Filters.findOneAndUpdate(
+      { _id: id, "subFilter._id": _id, vendorId: req.vendor },
       {
         $set: {
           "subFilter.$.name": name,
-          "subFilter.$.image": req.files
-            .find((file) => file.fieldname === "image")
-            .id.toString(),
+          ...(imageFile && {
+            "subFilter.$.image": imageFile.id.toString(),
+          }),
         },
-      }
-    )
-      .then((resp) => {
-        Filters.find({ _id: id, "subFilter._id": _id })
-          .select({ subFilter: 1 })
-          .then((resp) => {
-            res.json({
-              statusMsg: "Record Updated Successfully",
-              statusCode: 200,
-            });
-          });
-      })
-      .catch((error) =>
-        res.json({
-          statusMsg: "Cannot find the Filter",
-          statusCode: 404,
-        })
-      );
+      },
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    if (imageFile && oldImageId) {
+      await deleteFile(new mongoose.Types.ObjectId(oldImageId), req.vendor);
+    }
+
+    res.json({
+      statusMsg: "Record Updated Successfully",
+      statusCode: 200,
+    });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     res.status(500).json({
       statusCode: 500,
       statusMsg: error.message,
@@ -183,7 +210,7 @@ export const updateFilterType = async (req, res) => {
 export const toggleShowOnSearch = async (req, res) => {
   try {
     const { showOnSearch, id, _id } = req.body;
-    if (!showOnSearch || !id || !id)
+    if (!id || !id)
       res.status(400).json({
         statusCode: 400,
         statusMsg: "Invalid Data",
@@ -192,6 +219,7 @@ export const toggleShowOnSearch = async (req, res) => {
       {
         _id: id,
         "subFilter._id": _id,
+        vendorId: req.vendor,
       },
       {
         $set: {
@@ -199,7 +227,7 @@ export const toggleShowOnSearch = async (req, res) => {
         },
       }
     );
-    res.json({
+    res.status(200).json({
       statusMsg: "Record Updated Succesfully",
       statusCode: 200,
     });
@@ -214,8 +242,21 @@ export const toggleShowOnSearch = async (req, res) => {
 export const deleteFilterType = async (req, res) => {
   try {
     const { id, itemId } = req.body;
+    const filter = await Filters.findOne(
+      { _id: id, vendorId: req.vendor },
+      { subFilter: { $elemMatch: { _id: itemId } } }
+    );
+
+    if (!filter || !filter.subFilter.length) {
+      return res.status(404).json({ message: "SubFilter not found" });
+    }
+
+    const imageId = filter.subFilter[0].image;
+    if (imageId) {
+      await deleteFile(new mongoose.Types.ObjectId(imageId), req.vendor);
+    }
     Filters.findOneAndUpdate(
-      { _id: id },
+      { _id: id, vendorId: req.vendor },
       { $pull: { subFilter: { _id: itemId } } }
     ).then((resp) => {
       res.json({
@@ -233,7 +274,7 @@ export const deleteFilterType = async (req, res) => {
 
 export const getFilterWithSubFilter = async (req, res) => {
   try {
-    const FilterItems = await Filters.find().select(
+    const FilterItems = await Filters.find({ vendorId: req.vendor }).select(
       "-createdAt -updatedAt -__v -subFilter.image"
     );
     if (FilterItems.length === 0) {
@@ -257,6 +298,9 @@ export const getFilterWithSubFilter = async (req, res) => {
 export const getOptionsForSearch = async (req, res) => {
   try {
     const response = await Filters.aggregate([
+      {
+        $match: { vendorId: req.vendor },
+      },
       {
         $unwind: "$subFilter",
       },

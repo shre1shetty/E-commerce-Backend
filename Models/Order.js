@@ -83,11 +83,31 @@ const orderSchema = mongoose.Schema(
         type: Number,
         required: true,
       },
-      vendorId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        index: true,
+    },
+    refund: {
+      amount: { type: Number },
+      status: {
+        type: String,
       },
+      refundId: {
+        type: String,
+      },
+      initiatedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      completedAt: {
+        type: Date,
+      },
+    },
+    isRejected: {
+      type: Boolean,
+      default: false,
+    },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
     },
   },
   { timestamps: true }

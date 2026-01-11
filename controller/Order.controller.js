@@ -3,7 +3,11 @@ import { Order } from "../Models/Order.js";
 
 export const getAdminOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ vendorId: req.vendor })
+    const condition =
+      req.query.type === "unfulfilled"
+        ? { vendorId: req.vendor, isRejected: false }
+        : { vendorId: req.vendor, isRejected: true };
+    const orders = await Order.find(condition)
       .populate([
         {
           path: "userId",
@@ -78,7 +82,7 @@ export const getOrdersbyType = async (req, res) => {
     if (type === "Current") {
       res.status(200).json(
         unfilteredOrders
-          .filter((order) => !order.status.finalStage)
+          .filter((order) => !order.status.finalStage && !order.isRejected)
           .map((val) => ({
             ...val,
             products: val.products.map(({ quantity, productId, variant }) => {

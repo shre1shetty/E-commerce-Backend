@@ -91,12 +91,7 @@ app.use("/Cart", CartRoutes);
 app.use("/Payments", PaymentRoutes);
 app.use("/Orders", orderRoutes);
 app.use("/Stage", verifyToken, requireRole("admin"), stageRoutes);
-app.use(
-  "/WorkFlowDefination",
-  verifyToken,
-  requireRole("admin"),
-  workFlowDefinationRoutes
-);
+app.use("/WorkFlowDefination", workFlowDefinationRoutes);
 app.use("/Dashboard", verifyToken, requireRole("admin"), dashboardRoutes);
 app.use("/Address", addressRoutes);
 app.use("/Wishlist", wishlistRoutes);

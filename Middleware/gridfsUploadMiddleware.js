@@ -10,7 +10,6 @@ const uploadToGridFS = (req, file) => {
       contentType: file.mimetype,
       metadata: {
         vendorId: req.vendor,
-        uploadedBy: req.user?._id,
       },
     });
 

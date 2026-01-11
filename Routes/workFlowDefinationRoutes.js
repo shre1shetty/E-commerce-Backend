@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   addWorflowStage,
+  cancelOrder,
   deleteWorkFlowStage,
   getNextStage,
   getWorkFlowHistory,
@@ -8,8 +9,12 @@ import {
   proceedToNextStage,
   updateWorkFlowStage,
 } from "../controller/WorkFlowDefination.controller.js";
+import { requireRole, verifyToken } from "../Middleware/auth.js";
 
 const router = new Router();
+
+router.post("/cancelOrder", cancelOrder);
+router.use(verifyToken, requireRole("admin"));
 router.post("/addWorkFlowStage", addWorflowStage);
 router.get("/getWorkFlowStages", getWorkFlowStages);
 router.post("/updateWorkFlowStage", updateWorkFlowStage);

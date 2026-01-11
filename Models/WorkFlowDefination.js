@@ -24,6 +24,11 @@ const workFlowDefinationSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );

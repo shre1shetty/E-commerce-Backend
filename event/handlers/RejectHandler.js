@@ -7,6 +7,7 @@ eventBus.on("ORDER_REJECTED", async (payload) => {
   const {
     orderId,
     customerName,
+    vendorId,
     rejectionStage,
     rejectionReason,
     storeName,
@@ -27,7 +28,7 @@ eventBus.on("ORDER_REJECTED", async (payload) => {
   };
   const log = await EmailLog.create({
     orderId: orderId,
-    vendorId: customerName,
+    vendorId: vendorId,
     to: emailData.to,
     fromEmail: `"${storeName}" <${process.env.FROM_EMAIL}>`,
     fromName: emailData.fromName,

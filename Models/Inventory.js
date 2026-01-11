@@ -37,6 +37,11 @@ const InventorySchema = mongoose.Schema(
     fitType: {
       type: String,
     },
+    vendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
   },
   { strict: false },
   { timestamps: true }

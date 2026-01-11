@@ -62,10 +62,12 @@ export const confirmOrder = async (req, res) => {
 
     const nextStageId = await workFlowDefination.findOne({
       stageFrom: req.body.statusId,
+      vendorId: req.vendor,
     });
     if (!nextStageId) {
       return res.status(400).json({ message: "Invalid statusId" });
     }
+    req.body.vendorId = req.vendor;
     req.body.statusId = nextStageId.stageTo;
     const order = new Order(req.body);
     await order.save().catch((error) => {
@@ -77,6 +79,7 @@ export const confirmOrder = async (req, res) => {
       createdBy: req.body.userId,
       remarks: "Order placed",
       orderId: order._id,
+      vendorId: req.vendor,
     });
     await workFlowEntry.save().catch((error) => {
       console.error("Error saving workflow history:", error);
@@ -84,7 +87,11 @@ export const confirmOrder = async (req, res) => {
     await Promise.all(
       req.body.products.map(async ({ productId, variant, quantity }) => {
         await Products.findOneAndUpdate(
-          { _id: productId, "variantValues._id": variant },
+          {
+            _id: productId,
+            "variantValues._id": variant,
+            vendorId: req.vendor,
+          },
           {
             $inc: {
               "variantValues.$.values.inStock": -quantity,
@@ -97,6 +104,7 @@ export const confirmOrder = async (req, res) => {
     );
     await Cart.deleteMany({
       userId: new mongoose.Types.ObjectId(req.body.userId),
+      vendorId: req.vendor,
     });
     res.status(201).json({ message: "Order confirmed successfully", order });
   } catch (error) {

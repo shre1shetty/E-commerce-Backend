@@ -4,7 +4,7 @@ import XLSX from "xlsx";
 
 export const getInventory = async (req, res) => {
   try {
-    const InventoryItems = await Inventory.find();
+    const InventoryItems = await Inventory.find({ vendorId: req.vendor });
     res.json(InventoryItems);
   } catch (error) {
     res.status(500).json({
@@ -15,6 +15,7 @@ export const getInventory = async (req, res) => {
 };
 
 export const addInventory = async (req, res) => {
+  req.body.vendorId = req.vendor;
   const newItem = new Inventory(req.body);
   try {
     await newItem.save();
@@ -28,21 +29,22 @@ export const addInventory = async (req, res) => {
 };
 
 export const updateInventory = async (req, res) => {
-  // const newItem = new Inventory(req.body);
-
+  req.body.vendorId = req.vendor;
   try {
     Inventory.findOneAndUpdate(
       {
         _id: req.query.id,
+        vendorId: req.vendor,
       },
       req.body
     )
       .then((resp) => {
-        Inventory.findById(req.query.id).then((resp) =>
-          res.json({
-            statusMsg: "Record Updated Successfully",
-            statusCode: 200,
-          })
+        Inventory.find({ _id: req.query.id, vendorId: req.vendor }).then(
+          (resp) =>
+            res.json({
+              statusMsg: "Record Updated Successfully",
+              statusCode: 200,
+            })
         );
       })
       .catch((error) =>
@@ -63,6 +65,7 @@ export const deleteProduct = async (req, res) => {
   try {
     Inventory.deleteOne({
       _id: req.query.id,
+      vendorId: req.vendor,
     }).then((resp) => {
       res.json({
         statusMsg:
@@ -95,7 +98,10 @@ export const uploadToInventory = async (req, res) => {
       defval: "",
       raw: false,
     });
-    await Inventory.insertMany(data, { ordered: false });
+    await Inventory.insertMany(
+      data.map((val) => ({ ...val, vendorId: req.vendor })),
+      { ordered: false }
+    );
     res.json({
       statusMsg: "Inventory Uploaded Successfully",
       statusCode: 200,
