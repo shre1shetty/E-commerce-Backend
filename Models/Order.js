@@ -104,13 +104,17 @@ const orderSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isCompleted: {
+      type: Boolean,
+      default: false,
+    },
     vendorId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 orderSchema.virtual("status", {

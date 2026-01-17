@@ -5,8 +5,13 @@ export const getAdminOrders = async (req, res) => {
   try {
     const condition =
       req.query.type === "unfulfilled"
-        ? { vendorId: req.vendor, isRejected: false }
-        : { vendorId: req.vendor, isRejected: true };
+        ? { vendorId: req.vendor, isRejected: false, isCompleted: false }
+        : req.query.type === "fulfilled"
+          ? {
+              vendorId: req.vendor,
+              isCompleted: true,
+            }
+          : { vendorId: req.vendor, isRejected: true };
     const orders = await Order.find(condition)
       .populate([
         {
@@ -87,7 +92,7 @@ export const getOrdersbyType = async (req, res) => {
             ...val,
             products: val.products.map(({ quantity, productId, variant }) => {
               const variantField = productId.variantValues.find(
-                ({ _id }) => _id.toString() === variant.toString()
+                ({ _id }) => _id.toString() === variant.toString(),
               );
               return {
                 quantity,
@@ -98,7 +103,7 @@ export const getOrdersbyType = async (req, res) => {
                 picture: variantField.values.picture[0],
               };
             }),
-          }))
+          })),
       );
     } else if (type === "Fulfilled") {
       res.status(200).json(
@@ -108,7 +113,7 @@ export const getOrdersbyType = async (req, res) => {
             ...val,
             products: val.products.map(({ quantity, productId, variant }) => {
               const variantField = productId.variantValues.find(
-                ({ _id }) => _id.toString() === variant.toString()
+                ({ _id }) => _id.toString() === variant.toString(),
               );
               return {
                 quantity,
@@ -119,7 +124,7 @@ export const getOrdersbyType = async (req, res) => {
                 picture: variantField.values.picture[0],
               };
             }),
-          }))
+          })),
       );
     } else {
       res.status(200).json(
@@ -127,7 +132,7 @@ export const getOrdersbyType = async (req, res) => {
           ...val,
           products: val.products.map(({ quantity, productId, variant }) => {
             const variantField = productId.variantValues.find(
-              ({ _id }) => _id.toString() === variant.toString()
+              ({ _id }) => _id.toString() === variant.toString(),
             );
             return {
               quantity,
@@ -138,7 +143,7 @@ export const getOrdersbyType = async (req, res) => {
               picture: variantField.values.picture[0],
             };
           }),
-        }))
+        })),
       );
     }
   } catch (error) {

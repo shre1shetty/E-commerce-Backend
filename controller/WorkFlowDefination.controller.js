@@ -149,7 +149,7 @@ export const getNextStage = async (req, res) => {
     const { currentStageId } = req.query;
     const nextStages = await workFlowDefination
       .find({ stageFrom: currentStageId, vendorId: req.vendor })
-      .select("stageTo stageName _id");
+      .select("stageTo stageName _id finalStage");
     res.status(200).json(nextStages);
   } catch (error) {
     console.log(error);
@@ -204,6 +204,7 @@ export const proceedToNextStage = async (req, res) => {
       {
         statusId: req.body.statusId,
         isRejected: isRejectStage[0].rejectStage,
+        isCompleted: req.body.finalStage,
       },
     );
 

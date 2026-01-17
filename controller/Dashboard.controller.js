@@ -221,29 +221,40 @@ export const salesByCategory = async (req, res) => {
   try {
     const salesData = await Products.aggregate([
       {
-        $unwind: "$category",
-      },
-      {
         $unwind: "$variantValues",
       },
       {
-        $group: {
-          _id: "$category.label",
-          totalSales: { $sum: { $toInt: "$variantValues.values.price" } },
-          totalOrders: { $sum: "$variantValues.values.sold" },
+        $addFields: {
+          variantSold: { $toInt: "$variantValues.values.sold" },
+          variantSales: {
+            $multiply: [
+              { $toInt: "$variantValues.values.sold" },
+              { $toInt: "$variantValues.values.price" },
+            ],
+          },
         },
       },
       {
         $match: {
-          totalOrders: { $gt: 0 },
+          variantSold: { $gt: 0 },
+        },
+      },
+      {
+        $unwind: "$category",
+      },
+      {
+        $group: {
+          _id: "$category.label",
+          totalOrders: { $sum: "$variantSold" },
+          totalSales: { $sum: "$variantSales" },
         },
       },
       {
         $project: {
           _id: 0,
           category: "$_id",
-          totalSales: 1,
           totalOrders: 1,
+          totalSales: 1,
         },
       },
     ]);
