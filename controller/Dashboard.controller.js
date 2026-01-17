@@ -7,21 +7,28 @@ export const getMonthlySales = async (req, res) => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); // 1st day of current month
     const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const month = new Date().getMonth();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
     const monthlySales = await Order.aggregate([
+      { $match: { vendorId: req.vendor } },
       {
         $group: {
-          _id: { $month: "$createdAt" },
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
           totalSales: { $sum: "$amount" },
           totalOrders: { $sum: 1 },
         },
       },
       {
         $match: {
-          $and: [
-            { vendorId: req.vendor },
+          $or: [
+            { "_id.year": currentYear, "_id.month": currentMonth },
             {
-              $or: [{ _id: month + 1 }, { _id: month }],
+              "_id.year": currentMonth === 1 ? currentYear - 1 : currentYear,
+              "_id.month": currentMonth === 1 ? 12 : currentMonth - 1,
             },
           ],
         },
@@ -30,6 +37,7 @@ export const getMonthlySales = async (req, res) => {
         $sort: { _id: -1 },
       },
     ]);
+
     const salesByDays = await Order.aggregate([
       {
         $match: {
@@ -78,9 +86,10 @@ export const getMonthlySales = async (req, res) => {
             monthlySales[1]?.totalOrders) *
             100 || 0
         : 0;
+
+    console.log(monthlySales);
     res.json({
       monthlySales,
-
       data: monthlySales[0],
       percentage: percentage.toFixed(2),
       ordersPercentage: ordersPercentage.toFixed(2),
