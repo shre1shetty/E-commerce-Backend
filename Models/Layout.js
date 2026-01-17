@@ -82,11 +82,9 @@ const LayoutSchema = new mongoose.Schema(
         },
         overlayText: {
           type: String,
-          required: true,
         },
         overlaySubText: {
           type: String,
-          required: true,
         },
         overlayBgImage: {
           type: String,
@@ -94,29 +92,23 @@ const LayoutSchema = new mongoose.Schema(
         },
         categoryName: {
           type: String,
-          required: true,
         },
         prodPerRow: {
           type: Number,
-          required: true,
         },
         gap: {
           type: Number,
-          required: true,
         },
         size: {
           type: Number,
-          required: true,
         },
         products: [
           {
             label: {
               type: String,
-              required: true,
             },
             value: {
               type: String,
-              required: true,
             },
           },
         ],
@@ -168,7 +160,7 @@ const LayoutSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 LayoutSchema.index({ vendorId: 1, isActive: 1 });
 
@@ -177,7 +169,7 @@ LayoutSchema.index(
   {
     unique: true,
     partialFilterExpression: { isActive: true },
-  }
+  },
 );
 
 export const Layout = mongoose.model("Layout", LayoutSchema, "Layout");

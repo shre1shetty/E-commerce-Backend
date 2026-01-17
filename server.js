@@ -46,7 +46,7 @@ app.use(
     max: 100,
     standardHeaders: true,
     legacyHeaders: false,
-  })
+  }),
 );
 app.use((req, res, next) => {
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -117,7 +117,7 @@ app.get("/file", async (req, res) => {
         res.set("Content-Type", files[0].contentType);
         res.set(
           "Content-Disposition",
-          `attachment; filename=${files[0].filename}`
+          `attachment; filename=${files[0].filename}`,
         );
         gfs
           .openDownloadStream(fileId)
@@ -136,6 +136,14 @@ app.get("/file", async (req, res) => {
     res.status(500).send("Error retrieving file");
   }
 });
+
+// app.get("/deleteFile", async (req, res) => {
+//   await deleteFile(
+//     req.query.id,
+//   );
+//   res.status(200).json({});
+// });
+
 export const getFileContentById = (ID, vendorId) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -145,7 +153,6 @@ export const getFileContentById = (ID, vendorId) => {
       const files = await gfs
         .find({ _id: fileId, "metadata.vendorId": vendorId })
         .toArray();
-
       if (!files || files.length === 0) {
         return reject(new Error("File not found or unauthorized"));
       }
@@ -181,12 +188,15 @@ export const getFileContentById = (ID, vendorId) => {
 export async function deleteFile(fileId, vendorId) {
   try {
     const files = await gfs
-      .find({ _id: fileId, "metadata.vendorId": vendorId })
+      .find({
+        _id: new mongoose.Types.ObjectId(fileId),
+        "metadata.vendorId": vendorId,
+      })
       .toArray();
 
     if (!files.length) throw new Error("Unauthorized");
+    await gfs.delete(new mongoose.Types.ObjectId(fileId));
 
-    await gfs.delete(fileId);
     return true;
   } catch (error) {
     console.error("Error deleting file:", error);

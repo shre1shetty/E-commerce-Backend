@@ -5,7 +5,7 @@ export const getProduct = async (req, res) => {
   try {
     let products = await Products.find({ vendorId: req.vendor })
       .select(
-        "-__v -createdAt -updatedAt -variantValues -pictures -vendorId -Title -productType"
+        "-__v -createdAt -updatedAt -variantValues -pictures -vendorId -Title -productType",
       )
       .lean();
     products = products.map((product) => {
@@ -145,7 +145,7 @@ export const addProduct = async (req, res) => {
       variant.values.picture = [];
       const pictureKey = `variantValues[${index}][values][picture]`;
       const uploadedPicture = req.files.filter((file) =>
-        file.fieldname.includes(pictureKey)
+        file.fieldname.includes(pictureKey),
       );
       // console.log(uploadedPicture);
       if (uploadedPicture && uploadedPicture.length > 0) {
@@ -157,7 +157,7 @@ export const addProduct = async (req, res) => {
     });
     body.pictures = [];
     const uploadedPicture = req.files.filter((file) =>
-      file.fieldname.includes(`pictures[`)
+      file.fieldname.includes(`pictures[`),
     );
     if (uploadedPicture) {
       uploadedPicture.forEach((file) => {
@@ -179,12 +179,9 @@ export const addProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    Products.find({ _id: req.query.id, vendorId: req.vendor }).then((resp) => {
-      resp[0].variantValues.forEach((variant) => {
-        if (variant.values.picture) {
-          deleteFile(variant.values.picture, req.vendor);
-        }
-      });
+    const oldProduct = await Products.findOne({
+      _id: req.query.id,
+      vendorId: req.vendor,
     });
 
     const body = req.body;
@@ -193,7 +190,7 @@ export const updateProduct = async (req, res) => {
       variant.values.picture = [];
       const pictureKey = `variantValues[${index}][values][picture]`;
       const uploadedPicture = req.files.filter((file) =>
-        file.fieldname.includes(pictureKey)
+        file.fieldname.includes(pictureKey),
       );
       // console.log(uploadedPicture);
       if (uploadedPicture && uploadedPicture.length > 0) {
@@ -205,7 +202,7 @@ export const updateProduct = async (req, res) => {
     });
     body.pictures = [];
     const uploadedPicture = req.files.filter((file) =>
-      file.fieldname.includes(`pictures[`)
+      file.fieldname.includes(`pictures[`),
     );
     if (uploadedPicture) {
       uploadedPicture.forEach((file) => {
@@ -215,9 +212,16 @@ export const updateProduct = async (req, res) => {
     Products.findOneAndUpdate(
       { _id: req.query.id, vendorId: req.vendor },
       { $set: body },
-      { new: true } // Return the updated document
+      { new: true }, // Return the updated document
     )
       .then((resp) => {
+        oldProduct.variantValues.forEach((variant) => {
+          if (variant.values.picture && variant.values.picture.length > 0) {
+            variant.values.picture.forEach((pictureId) =>
+              deleteFile(pictureId, req.vendor),
+            );
+          }
+        });
         res.json({ statusMsg: "Record Updated Succesfully", statusCode: 200 });
       })
       .catch((error) => {
