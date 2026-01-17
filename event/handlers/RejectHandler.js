@@ -12,6 +12,7 @@ eventBus.on("ORDER_REJECTED", async (payload) => {
     rejectionReason,
     storeName,
     customerEmail,
+    supportEmail,
   } = payload;
   const htmlContent = `<h2 style="color:${"#000"}">Order Rejected</h2>
     <p>Hi ${customerName},</p>
@@ -30,7 +31,7 @@ eventBus.on("ORDER_REJECTED", async (payload) => {
     orderId: orderId,
     vendorId: vendorId,
     to: emailData.to,
-    fromEmail: `"${storeName}" <${process.env.FROM_EMAIL}>`,
+    fromEmail: `"${storeName}" <${supportEmail}>`,
     fromName: emailData.fromName,
     replyTo: emailData.replyTo,
     subject: emailData.subject,

@@ -14,5 +14,11 @@ export const resolveVendorByDomain = async (req, res, next) => {
     });
   }
   req.vendor = vendor._id;
+  req.GA4_CLIENT_EMAIL = vendor.analytics.ga4.clientEmail;
+  req.GA4_PRIVATE_KEY = vendor.analytics.ga4.privateKey;
+  req.GA4_PROPERTY_ID = vendor.analytics.ga4.propertyId;
+  req.RAZORPAY_KEY_ID = vendor.payment.razorpay.keyId;
+  req.RAZORPAY_SECRET = vendor.payment.razorpay.secret;
+  req.supportEmail = vendor.supportEmail;
   next();
 };

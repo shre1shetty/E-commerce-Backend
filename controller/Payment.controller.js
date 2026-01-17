@@ -11,8 +11,8 @@ export const createOrder = async (req, res) => {
   try {
     const { amount } = req.body;
     const instance = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_SECRET,
+      key_id: req.RAZORPAY_KEY_ID,
+      key_secret: req.RAZORPAY_SECRET,
     });
 
     const options = {
@@ -25,7 +25,7 @@ export const createOrder = async (req, res) => {
 
     if (!order) return res.status(500).send("Some error occured");
 
-    res.json({ order, key: process.env.RAZORPAY_KEY_ID });
+    res.json({ order, key: req.RAZORPAY_KEY_ID });
   } catch (error) {
     res.status(500).send(error);
   }
@@ -38,7 +38,7 @@ export const verifyOrder = (req, res) => {
 
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_SECRET)
+      .createHmac("sha256", req.RAZORPAY_SECRET)
       .update(sign.toString())
       .digest("hex");
 
@@ -98,9 +98,9 @@ export const confirmOrder = async (req, res) => {
               "variantValues.$.values.sold": quantity,
               sold: quantity,
             },
-          }
+          },
         );
-      })
+      }),
     );
     await Cart.deleteMany({
       userId: new mongoose.Types.ObjectId(req.body.userId),

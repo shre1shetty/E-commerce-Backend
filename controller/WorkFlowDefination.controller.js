@@ -38,7 +38,7 @@ export const updateWorkFlowStage = async (req, res) => {
       req.body,
       {
         new: true,
-      }
+      },
     );
     if (!updatedWorkFlowStage) {
       return res.status(404).json({ message: "Workflow stage not found" });
@@ -130,8 +130,8 @@ export const getWorkFlowHistory = async (req, res) => {
         !workFlowHistory.some(
           (history) =>
             history.workFlowStatusId &&
-            history.workFlowStatusId._id.toString() === item._id.toString()
-        )
+            history.workFlowStatusId._id.toString() === item._id.toString(),
+        ),
     );
     res.status(200).json({
       statusMsg: "Workflow history retrieved successfully",
@@ -204,15 +204,15 @@ export const proceedToNextStage = async (req, res) => {
       {
         statusId: req.body.statusId,
         isRejected: isRejectStage[0].rejectStage,
-      }
+      },
     );
 
     if (isRejectStage[0]?.rejectStage) {
       const { paymentId, amount } = req.body;
       if (paymentId && paymentId !== "" && paymentId !== "COD") {
         const instance = new Razorpay({
-          key_id: process.env.RAZORPAY_KEY_ID,
-          key_secret: process.env.RAZORPAY_SECRET,
+          key_id: req.RAZORPAY_KEY_ID,
+          key_secret: req.RAZORPAY_SECRET,
         });
         const resp = await instance.payments.refund(paymentId, {
           amount: amount * 100,
@@ -228,6 +228,7 @@ export const proceedToNextStage = async (req, res) => {
         rejectionReason: req.body.remarks,
         storeName: "StoresStore",
         customerEmail: req.body.email,
+        supportEmail: req.supportEmail,
       });
     }
     res
@@ -344,15 +345,15 @@ export const cancelOrder = async (req, res) => {
           initiatedAt: new Date(),
         },
       },
-      { session }
+      { session },
     );
     await session.commitTransaction();
     session.endSession();
     if (paymentId && paymentId !== "" && paymentId !== "COD") {
       try {
         const instance = new Razorpay({
-          key_id: process.env.RAZORPAY_KEY_ID,
-          key_secret: process.env.RAZORPAY_SECRET,
+          key_id: req.RAZORPAY_KEY_ID,
+          key_secret: req.RAZORPAY_SECRET,
         });
         const refund = await instance.payments.refund(paymentId, {
           amount: amount * 100,
@@ -363,12 +364,12 @@ export const cancelOrder = async (req, res) => {
             "refund.status": "SUCCESS",
             "refund.refundId": refund.id,
             completedAt: new Date(),
-          }
+          },
         );
       } catch (error) {
         await Order.updateOne(
           { _id: order._id },
-          { "refund.status": "FAILED" }
+          { "refund.status": "FAILED" },
         );
       }
     }
