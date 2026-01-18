@@ -107,7 +107,10 @@ app.get("/file", async (req, res) => {
     const fileId = new mongoose.Types.ObjectId(req.query.id);
     // Find the file in GridFS
     gfs
-      .find({ _id: fileId, "metadata.vendorId": req.vendor })
+      .find({
+        _id: fileId,
+        // , "metadata.vendorId": req.vendor
+      })
       .toArray()
       .then((files) => {
         if (!files || files.length === 0) {
