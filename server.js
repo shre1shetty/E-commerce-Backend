@@ -32,7 +32,7 @@ const corsOpts = {
   origin: process.env.CLIENT_URL || "http://localhost:5173",
   methods: ["GET", "POST"],
   exposedHeaders: "Content-Disposition",
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-store-domain"],
   credentials: true, // This is the key setting
 };
 app.set("trust proxy", 1);
