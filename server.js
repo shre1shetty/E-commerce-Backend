@@ -29,7 +29,7 @@ import { resolveVendorByDomain } from "./Middleware/vendorIdentification.js";
 const app = express();
 dotenv.config();
 const corsOpts = {
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: process.env.CLIENT_URL.split(",") || "http://localhost:5173",
   methods: ["GET", "POST"],
   exposedHeaders: "Content-Disposition",
   allowedHeaders: ["Content-Type", "Authorization", "x-store-domain"],
