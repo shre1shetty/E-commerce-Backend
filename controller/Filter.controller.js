@@ -10,7 +10,7 @@ export const getFilter = async (req, res) => {
         _id: data.id,
         name: data.name,
         filterCount: data.subFilter?.length,
-      }))
+      })),
     );
   } catch (error) {
     res.status(500).json({
@@ -43,7 +43,7 @@ export const updateFilter = async (req, res) => {
         _id: req.query.id,
         vendorId: req.vendor,
       },
-      req.body
+      req.body,
     )
       .then((resp) => {
         Filters.findBy({ id: req.query.id, vendorId: req.vendor }).then(
@@ -51,14 +51,14 @@ export const updateFilter = async (req, res) => {
             res.json({
               statusMsg: "Record Updated Successfully",
               statusCode: 200,
-            })
+            }),
         );
       })
       .catch((error) =>
         res.json({
           statusMsg: "Cannot find the Filter" + error.message,
           statusCode: 404,
-        })
+        }),
       );
   } catch (error) {
     res.status(500).json({
@@ -107,7 +107,7 @@ export const getFilterType = async (req, res) => {
         if (filterItem.image) {
           const image = await getFileContentById(
             new mongoose.Types.ObjectId(filterItem.image),
-            req.vendor
+            req.vendor,
           );
           filterItem.image = image;
         }
@@ -142,7 +142,7 @@ export const addFilterType = async (req, res) => {
       },
       {
         $push: { subFilter: req.body },
-      }
+      },
     );
     res.json({ statusMsg: "Record Saved Succesfully", statusCode: 200 });
   } catch (error) {
@@ -163,7 +163,7 @@ export const updateFilterType = async (req, res) => {
     const existing = await Filters.findOne(
       { _id: id, "subFilter._id": _id, vendorId: req.vendor },
       { "subFilter.$": 1 },
-      { session }
+      { session },
     ).lean();
 
     if (!existing) {
@@ -182,7 +182,7 @@ export const updateFilterType = async (req, res) => {
           }),
         },
       },
-      { session }
+      { session },
     );
 
     await session.commitTransaction();
@@ -225,7 +225,7 @@ export const toggleShowOnSearch = async (req, res) => {
         $set: {
           "subFilter.$.showOnSearch": showOnSearch,
         },
-      }
+      },
     );
     res.status(200).json({
       statusMsg: "Record Updated Succesfully",
@@ -244,7 +244,7 @@ export const deleteFilterType = async (req, res) => {
     const { id, itemId } = req.body;
     const filter = await Filters.findOne(
       { _id: id, vendorId: req.vendor },
-      { subFilter: { $elemMatch: { _id: itemId } } }
+      { subFilter: { $elemMatch: { _id: itemId } } },
     );
 
     if (!filter || !filter.subFilter.length) {
@@ -257,7 +257,7 @@ export const deleteFilterType = async (req, res) => {
     }
     Filters.findOneAndUpdate(
       { _id: id, vendorId: req.vendor },
-      { $pull: { subFilter: { _id: itemId } } }
+      { $pull: { subFilter: { _id: itemId } } },
     ).then((resp) => {
       res.json({
         statusMsg: "Record Deleted Successfully",
@@ -275,7 +275,7 @@ export const deleteFilterType = async (req, res) => {
 export const getFilterWithSubFilter = async (req, res) => {
   try {
     const FilterItems = await Filters.find({ vendorId: req.vendor }).select(
-      "-createdAt -updatedAt -__v -subFilter.image"
+      "-createdAt -updatedAt -__v -subFilter.image",
     );
     if (FilterItems.length === 0) {
       return res.status(404).json({
@@ -312,6 +312,9 @@ export const getOptionsForSearch = async (req, res) => {
           from: "Filters",
           let: { parentId: "$_id" },
           pipeline: [
+            {
+              $match: { vendorId: req.vendor },
+            },
             {
               $match: { $expr: { $ne: ["$_id", "$$parentId"] } },
             },

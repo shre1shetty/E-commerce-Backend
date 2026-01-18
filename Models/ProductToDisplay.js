@@ -44,10 +44,6 @@ const productSchema = mongoose.Schema(
     productTypeId: {
       type: String,
     },
-    inStock: {
-      type: Number,
-      required: true,
-    },
     sold: {
       type: Number,
       required: true,
@@ -75,7 +71,6 @@ const productSchema = mongoose.Schema(
     },
     fitType: {
       type: String,
-      required: true,
     },
     variantValues: [
       {
@@ -109,7 +104,7 @@ const productSchema = mongoose.Schema(
           picture: [
             {
               type: String,
-              // required: true,
+              required: true,
             },
           ],
         },
@@ -150,7 +145,7 @@ const productSchema = mongoose.Schema(
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Products = mongoose.model("Products", productSchema, "Products");

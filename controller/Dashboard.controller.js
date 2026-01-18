@@ -108,6 +108,9 @@ export const getTopSellingProducts = async (req, res) => {
   try {
     const topProducts = await Products.aggregate([
       {
+        $match: { vendorId: req.vendor },
+      },
+      {
         $unwind: "$variantValues",
       },
       {
@@ -142,11 +145,17 @@ export const getOverAllData = async (req, res) => {
     const month = new Date().getMonth();
     const userCount = await User.countDocuments({ role: "user" });
     const result = await Products.aggregate([
+      {
+        $match: { vendorId: req.vendor },
+      },
       { $unwind: "$variantValues" },
       { $count: "totalVariants" },
     ]);
     const productCount = result[0]?.totalVariants || 0;
     const salesData = await Order.aggregate([
+      {
+        $match: { vendorId: req.vendor },
+      },
       {
         $group: {
           _id: null,
@@ -157,6 +166,9 @@ export const getOverAllData = async (req, res) => {
     const totalSales = salesData[0]?.totalSales || 0;
 
     const productsByMonth = await Order.aggregate([
+      {
+        $match: { vendorId: req.vendor },
+      },
       {
         $group: {
           _id: { $month: "$createdAt" },
@@ -172,6 +184,9 @@ export const getOverAllData = async (req, res) => {
     ]);
 
     const usersByMonth = await User.aggregate([
+      {
+        $match: { vendorId: req.vendor },
+      },
       {
         $group: {
           _id: { $month: "$createdAt" },
@@ -220,6 +235,9 @@ export const getOverAllData = async (req, res) => {
 export const salesByCategory = async (req, res) => {
   try {
     const salesData = await Products.aggregate([
+      {
+        $match: { vendorId: req.vendor },
+      },
       {
         $unwind: "$variantValues",
       },

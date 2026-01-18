@@ -19,7 +19,6 @@ const VariantSchema = mongoose.Schema(
       {
         name: {
           type: String,
-          unique: true,
         },
         flag: {
           type: String,
@@ -32,7 +31,7 @@ const VariantSchema = mongoose.Schema(
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Variants = mongoose.model("Variants", VariantSchema, "Variants");

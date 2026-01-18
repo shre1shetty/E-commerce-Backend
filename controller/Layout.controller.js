@@ -31,14 +31,14 @@ export const addLayout = async (req, res) => {
       // console.log(row, req.files);
       row.file = req.files
         .find(
-          (file) => file.fieldname === `headerElement[rows][${index}][file]`
+          (file) => file.fieldname === `headerElement[rows][${index}][file]`,
         )
         .id.toString();
     });
     body.subHeaderElement?.rows?.forEach((row, index) => {
       row.file = req.files
         .find(
-          (file) => file.fieldname === `subHeaderElement[rows][${index}][file]`
+          (file) => file.fieldname === `subHeaderElement[rows][${index}][file]`,
         )
         .id.toString();
     });
@@ -80,7 +80,7 @@ export const updateLayout = async (req, res) => {
     if (body.headerElement?.rows) {
       body.headerElement.rows.forEach((row, index) => {
         const rowFile = req.files?.find(
-          (file) => file.fieldname === `headerElement[rows][${index}][file]`
+          (file) => file.fieldname === `headerElement[rows][${index}][file]`,
         );
         if (rowFile) {
           row.file = rowFile.id.toString();
@@ -91,7 +91,7 @@ export const updateLayout = async (req, res) => {
     if (body.subHeaderElement?.rows) {
       body.subHeaderElement.rows.forEach((row, index) => {
         const rowFile = req.files?.find(
-          (file) => file.fieldname === `subHeaderElement[rows][${index}][file]`
+          (file) => file.fieldname === `subHeaderElement[rows][${index}][file]`,
         );
         if (rowFile) {
           row.file = rowFile.id.toString();
@@ -102,7 +102,7 @@ export const updateLayout = async (req, res) => {
     if (body.sections) {
       body.sections.forEach((row, index) => {
         const rowFile = req.files?.find(
-          (file) => file.fieldname === `sections[${index}][overlayBgImage]`
+          (file) => file.fieldname === `sections[${index}][overlayBgImage]`,
         );
         if (rowFile) {
           row.overlayBgImage = rowFile.id.toString();
@@ -177,7 +177,7 @@ export const toggleLayoutActiveStatus = async (req, res) => {
     const { layoutId, isActive } = req.body;
     await Layout.updateOne(
       { _id: layoutId, vendorId: req.vendor },
-      { isActive: isActive }
+      { isActive: isActive },
     );
     res.status(200).json({
       statusMsg: "Layout status updated successfully",
@@ -221,21 +221,21 @@ export const getActiveLayout = async (req, res) => {
     //sections-start
     const sectionIds = layout.sections.reduce(
       (acc, { products }) => (acc = [...acc, ...products.map((p) => p.value)]),
-      []
+      [],
     );
 
     const FilteredProducts = await Products.find({
       _id: { $in: sectionIds },
     })
       .select(
-        "-__v -createdAt -updatedAt -category -inStock -brand -sold -productType -fitType -fabric"
+        "-__v -createdAt -updatedAt -category -inStock -brand -sold -productType -fitType -fabric",
       )
       .lean();
 
     layout.sections = layout.sections.map((val) => ({
       ...val,
       products: val.products.map(({ value }) =>
-        FilteredProducts.find(({ _id }) => value.toString() === _id.toString())
+        FilteredProducts.find(({ _id }) => value.toString() === _id.toString()),
       ),
     }));
 
@@ -271,13 +271,13 @@ export const editLayout = async (req, res) => {
     if (layout.logo && layout.logo.length > 0)
       layout.logo = await getFileContentById(
         new mongoose.Types.ObjectId(layout.logo),
-        req.vendor
+        req.vendor,
       );
     for (const row of layout.headerElement.rows) {
       if (row.file && row.file.length > 0)
         row.file = await getFileContentById(
           new mongoose.Types.ObjectId(row.file),
-          req.vendor
+          req.vendor,
         );
       delete row._id;
     }
@@ -285,16 +285,16 @@ export const editLayout = async (req, res) => {
       if (section.overlayBgImage && section.overlayBgImage !== "")
         section.overlayBgImage = await getFileContentById(
           new mongoose.Types.ObjectId(section.overlayBgImage),
-          req.vendor
+          req.vendor,
         );
       delete section._id;
     }
-    if (layout.subHeaderElement) {
+    if (layout.subHeaderElement && layout.subHeaderElement.rows) {
       for (const row of layout.subHeaderElement?.rows) {
         if (row.file && row.file.length > 0)
           row.file = await getFileContentById(
             new mongoose.Types.ObjectId(row.file),
-            req.vendor
+            req.vendor,
           );
         delete row._id;
       }

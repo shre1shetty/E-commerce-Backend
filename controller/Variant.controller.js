@@ -49,7 +49,7 @@ export const updateVariant = async (req, res) => {
         _id: req.query.id,
         vendorId: req.vendor,
       },
-      req.body
+      req.body,
     )
       .then(() => {
         res.json({
@@ -61,7 +61,7 @@ export const updateVariant = async (req, res) => {
         res.json({
           statusMsg: "Cannot find the Filter" + error.message,
           statusCode: 404,
-        })
+        }),
       );
   } catch (error) {
     res.status(500).json({
@@ -129,10 +129,11 @@ export const addVariantField = async (req, res) => {
       },
       {
         $push: { fields: req.body },
-      }
+      },
     );
     res.json({ statusMsg: "Record Saved Succesfully", statusCode: 200 });
   } catch (error) {
+    console.log(error);
     res.status(500).json({
       statusCode: 500,
       statusMsg: error.message,
@@ -146,7 +147,7 @@ export const updateVariantField = async (req, res) => {
   try {
     Variants.findOneAndUpdate(
       { _id: id, "fields._id": _id, vendorId: req.vendor },
-      { $set: { "fields.$.name": name, "fields.$.flag": flag } }
+      { $set: { "fields.$.name": name, "fields.$.flag": flag } },
     )
       .then((resp) => {
         res.json({
@@ -174,7 +175,7 @@ export const deleteVariantField = async (req, res) => {
     const { id, itemId } = req.body;
     Variants.findOneAndUpdate(
       { _id: id, vendorId: req.vendor },
-      { $pull: { fields: { _id: itemId } } }
+      { $pull: { fields: { _id: itemId } } },
     ).then((resp) => {
       res.json({
         statusMsg: "Record Deleted Successfully",

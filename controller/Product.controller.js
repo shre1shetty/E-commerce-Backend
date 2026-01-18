@@ -170,6 +170,17 @@ export const addProduct = async (req, res) => {
     res.json({ statusMsg: "Record Saved Succesfully", statusCode: 200 });
   } catch (error) {
     console.log(error);
+    if (req.files?.length) {
+      try {
+        await Promise.all(
+          req.files
+            .filter((file) => file.id)
+            .map((file) => deleteFile(file.id, req.vendor)),
+        );
+      } catch (cleanupError) {
+        console.error("File cleanup failed:", cleanupError);
+      }
+    }
     res.status(500).json({
       statusCode: 500,
       statusMsg: "Server Error",
