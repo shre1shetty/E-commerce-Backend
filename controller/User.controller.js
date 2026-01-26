@@ -37,22 +37,22 @@ export const LoginUser = async (req, res) => {
     const user = await User.findOne({
       $or: [
         {
-          username: { $regex: username.trim(), $options: "i" },
+          username: { $regex: new RegExp(`^${username.trim()}$`, "i") },
           password: password,
           vendorId: req.vendor,
         },
         {
-          email: { $regex: username.trim(), $options: "i" },
+          email: { $regex: new RegExp(`^${username.trim()}$`, "i") },
           password: password,
           vendorId: req.vendor,
         },
         {
-          username: { $regex: username.trim(), $options: "i" },
+          username: { $regex: new RegExp(`^${username.trim()}$`, "i") },
           password: password,
           role: "superadmin",
         },
         {
-          email: { $regex: username.trim(), $options: "i" },
+          email: { $regex: new RegExp(`^${username.trim()}$`, "i") },
           password: password,
           role: "superadmin",
         },
