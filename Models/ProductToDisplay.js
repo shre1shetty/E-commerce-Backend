@@ -93,6 +93,7 @@ const productSchema = mongoose.Schema(
             required: true,
             default: "0",
           },
+          discountPercent: Number,
           inStock: {
             type: Number,
             required: true,
@@ -147,5 +148,40 @@ const productSchema = mongoose.Schema(
   },
   { timestamps: true },
 );
+
+const calculateDiscount = (variant) => {
+  const price = Number(variant.values.price);
+  const discountedPrice = Number(variant.values.discountedPrice);
+  let discountPercent = 0;
+  if (price && discountedPrice && discountedPrice < price) {
+    discountPercent = Math.round(((price - discountedPrice) / price) * 100);
+  }
+  return discountPercent;
+};
+
+productSchema.pre("save", function (next) {
+  if (!this.isModified("variantValues")) return next();
+  this.variantValues.forEach((variant) => {
+    variant.values.discountPercent = calculateDiscount(variant);
+  });
+  next();
+});
+
+productSchema.pre("findOneAndUpdate", function (next) {
+  const update = this.getUpdate();
+  const variantValues = update?.variantValues || update?.$set?.variantValues;
+
+  if (variantValues) {
+    variantValues.forEach((variant) => {
+      variant.values.discountPercent = calculateDiscount(variant);
+    });
+    if (update.$set) {
+      update.$set.variantValues = variantValues;
+    } else {
+      update.variantValues = variantValues;
+    }
+  }
+  next();
+});
 
 export const Products = mongoose.model("Products", productSchema, "Products");

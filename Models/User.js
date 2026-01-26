@@ -35,11 +35,18 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
     refreshToken: { type: String },
+    otp: {
+      type: String,
+      maxLength: 6,
+    },
+    otpExpiry: {
+      type: Date,
+    },
     vendorId: {
       type: mongoose.Schema.Types.ObjectId,
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 export const User = mongoose.model("User", UserSchema, "Users");

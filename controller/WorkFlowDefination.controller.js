@@ -227,7 +227,7 @@ export const proceedToNextStage = async (req, res) => {
         customerName: req.body.username,
         rejectionStage: isRejectStage[0].stageFrom,
         rejectionReason: req.body.remarks,
-        storeName: "StoresStore",
+        storeName: req.storeName,
         customerEmail: req.body.email,
         supportEmail: req.supportEmail,
       });

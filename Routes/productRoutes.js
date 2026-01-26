@@ -23,7 +23,7 @@ router.post(
   "/updateProduct",
   upload.any(),
   gridfsUploadMiddleware,
-  updateProduct
+  updateProduct,
 );
 router.post("/getProducts", getProduct);
 export const ProductRoutes = router;

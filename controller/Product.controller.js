@@ -326,7 +326,16 @@ export const getSearchProduct = async (req, res) => {
 
 export const getProductByFilters = async (req, res) => {
   try {
-    const { fabric, brand, fitType, category, variantFields, tags } = req.body;
+    const {
+      fabric,
+      brand,
+      fitType,
+      category,
+      variantFields,
+      Tags,
+      discount,
+      TopDiscount,
+    } = req.body;
     // Dynamically construct the $or array
     const filters = [];
     if (fabric) filters.push({ fabric: { $regex: fabric, $options: "i" } });
@@ -338,12 +347,20 @@ export const getProductByFilters = async (req, res) => {
       filters.push({
         "variantFields.value": { $regex: variantFields, $options: "i" },
       });
-    if (tags)
+    if (Tags)
       filters.push({
         tags: {
-          $in: tags.split(",").map((term) => new RegExp(`^${term}$`, "i")),
+          $in: Tags.split(",").map((term) => new RegExp(`^${term}$`, "i")),
         },
       });
+    if (discount)
+      filters.push({
+        "variantValues.values.discountPercent": {
+          $gte: Number(discount),
+        },
+      });
+    if (TopDiscount)
+      filters.push({ "variantValues.values.discountPercent": { $gte: 0 } });
     // If no filters are provided, return an empty array or a 400 error
     if (filters.length === 0) {
       return res.status(400).json({
@@ -355,7 +372,9 @@ export const getProductByFilters = async (req, res) => {
     const products = await Products.find({
       vendorId: req.vendor,
       $or: filters,
-    }).select("-__v -createdAt -updatedAt -vendorId");
+    })
+      .sort({ "variantValues.values.discountPercent": -1 })
+      .select("-__v -createdAt -updatedAt -vendorId");
 
     if (products.length === 0) {
       return res.status(404).json({

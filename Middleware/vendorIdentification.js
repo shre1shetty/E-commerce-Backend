@@ -20,5 +20,6 @@ export const resolveVendorByDomain = async (req, res, next) => {
   req.RAZORPAY_KEY_ID = vendor.payment.razorpay.keyId;
   req.RAZORPAY_SECRET = vendor.payment.razorpay.secret;
   req.supportEmail = vendor.supportEmail;
+  req.storeName = vendor.storeName;
   next();
 };
